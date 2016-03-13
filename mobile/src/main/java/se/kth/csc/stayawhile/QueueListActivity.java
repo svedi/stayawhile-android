@@ -1,31 +1,15 @@
 package se.kth.csc.stayawhile;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.net.CookieHandler;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.util.concurrent.ExecutionException;
-
-import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class QueueListActivity extends AppCompatActivity {
 
@@ -60,7 +44,7 @@ public class QueueListActivity extends AppCompatActivity {
     }
 
     private void onQueueUpdate(JSONArray queues) {
-        mAdapter = new QueueAdapter(queues, this);
+        mAdapter = new QueueListAdapter(queues, this);
         mRecyclerView.setAdapter(mAdapter);
     }
 
