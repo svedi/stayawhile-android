@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    card_view:cardCornerRadius="4dp"
+    android:onClick="onQueueSelect"
+    >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp">
+
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:background="@color/colorAccent">
+
+            <TextView
+                android:id="@+id/queue_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textColor="@android:color/white"
+                android:textSize="15dp"
+                android:padding="5dp"
+                />
+
+            <TextView
+                android:id="@+id/queue_people"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/colorAccent"
+                android:layout_alignParentRight="true"
+                android:textColor="@android:color/white"
+                android:textSize="15dp"
+                android:padding="5dp"
+                />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:foregroundGravity="center_vertical"
+                android:layout_toLeftOf="@id/queue_people"
+                android:src="@drawable/ic_people_outline_white_18dp"
+                />
+
+        </RelativeLayout>
+
+
+    </RelativeLayout>
+</android.support.v7.widget.CardView>
