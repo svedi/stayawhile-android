@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
-public class QueueListActivity extends AppCompatActivity {
+public class QueueActivity extends AppCompatActivity {
 
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
@@ -36,39 +36,22 @@ public class QueueListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_queuelist);
+        setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        mRecyclerView = (RecyclerView) findViewById(R.id.queue_list);
-        mRecyclerView.setHasFixedSize(true);
-        mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        new APITask(new APICallback() {
-            @Override
-            public void r(String result) {
-                try {
-                    JSONArray queues = new JSONArray(result);
-                    QueueListActivity.this.onQueueUpdate(queues);
-                } catch (JSONException e) {
-                    //TODO
-                    e.printStackTrace();
-                }
-            }
-        }).execute("method", "queueList");
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
-
-    private void onQueueUpdate(JSONArray queues) {
-        mAdapter = new QueueAdapter(queues, this);
-        mRecyclerView.setAdapter(mAdapter);
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
         return true;
     }
 

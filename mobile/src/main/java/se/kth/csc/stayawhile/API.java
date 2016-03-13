@@ -13,14 +13,28 @@ public class API {
     private static final String API_URL = "http://queue.csc.kth.se/API/";
 
     public static String loadURL(String url) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder body = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            body.append(line);
+        int tries = 0;
+        while(true) {
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder body = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    body.append(line);
+                }
+                return body.toString();
+            } catch (IOException e) {
+                if (tries == 5) {
+                    Log.e(API.class.getSimpleName(), "Could not load API call", e);
+                    throw e;
+                }
+                try {
+                    Thread.sleep(50 * (1 << tries));
+                } catch (InterruptedException e1) {
+                }
+            }
         }
-        return body.toString();
     }
 
     public static String sendAPICall(String method) throws IOException {

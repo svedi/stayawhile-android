@@ -37,9 +37,19 @@ public class MainActivity extends AppCompatActivity {
         CookieManager cookieManager = new CookieManager(new PersistentCookieStore(getApplicationContext()), CookiePolicy.ACCEPT_ALL);
         CookieHandler.setDefault(cookieManager);
 
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        new APITask(new APICallback() {
+            @Override
+            public void r(String result) {
+                if (result.length() != 0) {
+                    Intent queueList = new Intent(MainActivity.this, QueueListActivity.class);
+                    startActivity(queueList);
+                } else {
+                    setContentView(R.layout.activity_main);
+                    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+                    setSupportActionBar(toolbar);
+                }
+            }
+        }).execute("method", "userData");
     }
 
     public void onLogin(View view) {
@@ -61,12 +71,16 @@ public class MainActivity extends AppCompatActivity {
     public void onTicket(String url) {
         try {
             new APITask().execute("url", url).get();
-            String s = new APITask().execute("method", "userData").get();
-            SharedPreferences.Editor editor = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
-            editor.putString("userData", s);
-            editor.apply();
-            Intent queueList = new Intent(this, QueueListActivity.class);
-            startActivity(queueList);
+            new APITask(new APICallback() {
+                @Override
+                public void r(String result) {
+                    SharedPreferences.Editor editor = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
+                    editor.putString("userData", result);
+                    editor.apply();
+                    Intent queueList = new Intent(MainActivity.this, QueueListActivity.class);
+                    startActivity(queueList);
+                }
+            }).execute("method", "userData");
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
