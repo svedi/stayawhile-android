@@ -2,8 +2,6 @@ package se.kth.csc.stayawhile;
 
 import android.os.AsyncTask;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 
