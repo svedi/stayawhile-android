@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
@@ -80,9 +81,37 @@ public class QueueActivity extends AppCompatActivity {
     }
 
     private void newUser(Object... args) {
+        try {
+            mQueue.getJSONArray("queue").put(args[0]);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    onQueueUpdate();
+                }
+            });
+        } catch (JSONException e) {
+        }
     }
 
     private void removeUser(Object... args) {
+        try {
+            String id = ((JSONObject) args[0]).getString("ugKthid");
+            JSONArray queuees = mQueue.getJSONArray("queue");
+            for (int i = 0; i < queuees.length(); i++) {
+                if (queuees.getJSONObject(i).getString("ugKthid").equals(id)) {
+                    queuees.remove(i);
+                    break;
+                }
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    onQueueUpdate();
+                }
+            });
+            System.out.println(Arrays.toString(args));
+        } catch (JSONException e) {
+        }
     }
 
     @Override
