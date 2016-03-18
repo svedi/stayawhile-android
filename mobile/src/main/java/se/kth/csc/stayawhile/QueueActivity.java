@@ -24,6 +24,8 @@ public class QueueActivity extends AppCompatActivity {
     private RecyclerView.LayoutManager mLayoutManager;
 
     private Socket mSocket;
+    private JSONObject mQueue;
+    private String mQueueName;
 
     {
         try {
@@ -36,13 +38,13 @@ public class QueueActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String queue = getIntent().getStringExtra("queue");
+        this.mQueueName = getIntent().getStringExtra("queue");
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(queue);
+        getSupportActionBar().setTitle(mQueueName);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.queue_people);
         mRecyclerView.setHasFixedSize(true);
@@ -53,14 +55,14 @@ public class QueueActivity extends AppCompatActivity {
             @Override
             public void r(String result) {
                 try {
-                    JSONObject queuePeople = new JSONObject(result);
-                    QueueActivity.this.onQueueUpdate(queuePeople);
+                    mQueue = new JSONObject(result);
+                    QueueActivity.this.onQueueUpdate();
                 } catch (JSONException e) {
                     //TODO
                     e.printStackTrace();
                 }
             }
-        }).execute("method", "queue/" + queue);
+        }).execute("method", "queue/" + mQueueName);
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
@@ -74,7 +76,7 @@ public class QueueActivity extends AppCompatActivity {
             }
         });
         mSocket.connect();
-        mSocket.emit("listen", queue);
+        mSocket.emit("listen", mQueueName);
     }
 
     private void newUser(Object... args) {
@@ -89,9 +91,12 @@ public class QueueActivity extends AppCompatActivity {
         mSocket.disconnect();
     }
 
-    private void onQueueUpdate(JSONObject queuePeople) throws JSONException {
-        mAdapter = new QueueAdapter(queuePeople.getJSONArray("queue"), this);
-        mRecyclerView.setAdapter(mAdapter);
+    private void onQueueUpdate() {
+        try {
+            mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), this);
+            mRecyclerView.setAdapter(mAdapter);
+        } catch (JSONException e) {
+        }
     }
 
     @Override
