@@ -16,16 +16,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import se.kth.csc.stayawhile.swipe.SwipeableRecyclerViewTouchListener;
 
 public class QueueActivity extends AppCompatActivity {
 
     private RecyclerView mRecyclerView;
-    private RecyclerView.Adapter mAdapter;
+    private QueueAdapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
 
     private Socket mSocket;
@@ -42,7 +45,6 @@ public class QueueActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         this.mQueueName = getIntent().getStringExtra("queue");
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -55,6 +57,46 @@ public class QueueActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
+        SwipeableRecyclerViewTouchListener swipeTouchListener =
+                new SwipeableRecyclerViewTouchListener(mRecyclerView,
+                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
+                            @Override
+                            public boolean canSwipeLeft(int position) {
+                                return true;
+                            }
+
+                            public boolean canSwipeRight(int position) {
+                                return mAdapter.isWaiting(position);
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeLeft(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                List<JSONObject> users = new ArrayList<>();
+                                for (int position : reverseSortedPositions) {
+                                    users.add(mAdapter.onPosition(position));
+                                    mAdapter.removePosition(position);
+                                }
+                                mAdapter.notifyDataSetChanged();
+                                for (JSONObject user : users) {
+                                    sendKick(user);
+                                }
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                List<JSONObject> users = new ArrayList<>();
+                                for (int position : reverseSortedPositions) {
+                                    users.add(mAdapter.onPosition(position));
+                                    mAdapter.removePosition(position);
+                                }
+                                mAdapter.notifyDataSetChanged();
+                                for (JSONObject user : users) {
+                                    sendHelp(user);
+                                }
+                            }
+                        });
+
+        mRecyclerView.addOnItemTouchListener(swipeTouchListener);
 
         registerForContextMenu(mRecyclerView);
 
@@ -73,22 +115,114 @@ public class QueueActivity extends AppCompatActivity {
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
+                System.out.println("join " + Arrays.toString(args));
                 newUser(args);
             }
         });
         mSocket.on("leave", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
+                System.out.println("leave " + Arrays.toString(args));
                 removeUser(args);
+            }
+        });
+        mSocket.on("update", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                System.out.println("update " + Arrays.toString(args));
+                updateUser(args);
+            }
+        });
+        mSocket.on("help", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                System.out.println("help " + Arrays.toString(args));
+                setHelp(args);
+            }
+        });
+        mSocket.on("stopHelp", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                System.out.println("stopHelp " + Arrays.toString(args));
+                setStopHelp(args);
             }
         });
         mSocket.connect();
         mSocket.emit("listen", mQueueName);
     }
 
-    private void newUser(Object... args) {
+    private void sendHelp(JSONObject user) {
         try {
-            mQueue.getJSONArray("queue").put(args[0]);
+            JSONObject obj = new JSONObject();
+            obj.put("ugKthid", user.get("ugKthid"));
+            obj.put("queueName", mQueueName);
+            mSocket.emit("help", obj);
+        } catch (JSONException e) {
+        }
+    }
+
+    private void sendKick(JSONObject user) {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("user", user);
+            obj.put("queueName", mQueueName);
+            mSocket.emit("kick", obj);
+        } catch (JSONException e) {
+        }
+    }
+
+    private void setStopHelp(Object... args) {
+        try {
+            JSONObject user = (JSONObject) args[0];
+            int pos = mAdapter.positionOf(user.getString("ugKthid"));
+            if (pos >= 0) {
+                JSONObject existing = mAdapter.onPosition(pos);
+                mAdapter.removePosition(pos);
+                existing.put("gettingHelp", false);
+                existing.remove("helper");
+                mAdapter.add(existing);
+            }
+        } catch (JSONException e) {
+        }
+    }
+
+    private void setHelp(Object... args) {
+        try {
+            JSONObject user = (JSONObject) args[0];
+            int pos = mAdapter.positionOf(user.getString("ugKthid"));
+            System.out.println("found user at " + mAdapter);
+            if (pos >= 0) {
+                JSONObject existing = mAdapter.onPosition(pos);
+                mAdapter.removePosition(pos);
+                existing.put("gettingHelp", true);
+                if (user.has("helper")) {
+                    existing.put("helper", user.get("helper"));
+                }
+                mAdapter.add(existing);
+            }
+        } catch (JSONException e) {
+        }
+    }
+
+    private void updateUser(Object... args) {
+        try {
+            JSONObject user = (JSONObject) args[0];
+            int pos = mAdapter.positionOf(user.getString("ugKthid"));
+            if (pos >= 0) {
+                mAdapter.set(pos, user);
+            }
+        } catch (JSONException e) {
+        }
+
+        try {
+            JSONObject user = (JSONObject) args[0];
+            JSONArray queuees = mQueue.getJSONArray("queue");
+            for (int i = 0; i < queuees.length(); i++) {
+                if (queuees.getJSONObject(i).getString("ugKthid").equals(user.getString("ugKthid"))) {
+                    queuees.put(i, user);
+                    break;
+                }
+            }
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -99,23 +233,18 @@ public class QueueActivity extends AppCompatActivity {
         }
     }
 
+    private void newUser(Object... args) {
+        JSONObject person = (JSONObject) args[0];
+        mAdapter.add(person);
+    }
+
     private void removeUser(Object... args) {
         try {
             String id = ((JSONObject) args[0]).getString("ugKthid");
-            JSONArray queuees = mQueue.getJSONArray("queue");
-            for (int i = 0; i < queuees.length(); i++) {
-                if (queuees.getJSONObject(i).getString("ugKthid").equals(id)) {
-                    queuees.remove(i);
-                    break;
-                }
+            int pos = mAdapter.positionOf(id);
+            if (pos >= 0) {
+                mAdapter.removePosition(pos);
             }
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    onQueueUpdate();
-                }
-            });
-            System.out.println(Arrays.toString(args));
         } catch (JSONException e) {
         }
     }
