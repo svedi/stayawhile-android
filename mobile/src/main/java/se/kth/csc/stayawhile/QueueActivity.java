@@ -11,11 +11,26 @@ import android.view.MenuItem;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URISyntaxException;
+
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
+
 public class QueueActivity extends AppCompatActivity {
 
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
+
+    private Socket mSocket;
+
+    {
+        try {
+            mSocket = IO.socket("http://queue.csc.kth.se/");
+        } catch (URISyntaxException e) {
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +61,32 @@ public class QueueActivity extends AppCompatActivity {
                 }
             }
         }).execute("method", "queue/" + queue);
+        mSocket.on("join", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                newUser(args);
+            }
+        });
+        mSocket.on("leave", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                removeUser(args);
+            }
+        });
+        mSocket.connect();
+        mSocket.emit("listen", queue);
+    }
 
+    private void newUser(Object... args) {
+    }
+
+    private void removeUser(Object... args) {
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mSocket.disconnect();
     }
 
     private void onQueueUpdate(JSONObject queuePeople) throws JSONException {
