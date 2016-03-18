@@ -1,6 +1,7 @@
 package se.kth.csc.stayawhile;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +15,7 @@ import org.json.JSONObject;
 public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> {
 
     private JSONArray mDataset;
-
+    private boolean firstInQueue = true;
     public class ViewHolder extends RecyclerView.ViewHolder {
 
         public View mCardView;
@@ -30,8 +31,19 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             try {
                 TextView title = (TextView) mCardView.findViewById(R.id.queuee_name);
                 title.setText(data.getString("realname"));
-                TextView length = (TextView) mCardView.findViewById(R.id.queuee_location);
-                length.setText(data.getString("location"));
+                TextView location = (TextView) mCardView.findViewById(R.id.queuee_location);
+                location.setText(data.getString("location"));
+
+                if(firstInQueue &&!data.getBoolean("gettingHelp")){
+                    title.setText("\u25B6 " + title.getText());
+                    title.setTypeface(Typeface.DEFAULT_BOLD);
+                    location.setTypeface(Typeface.DEFAULT_BOLD);
+                    firstInQueue = false;
+                } else {
+                    title.setTypeface(Typeface.DEFAULT);
+                    location.setTypeface(Typeface.DEFAULT);
+                }
+
             } catch (JSONException e) {
                 //TODO
             }
