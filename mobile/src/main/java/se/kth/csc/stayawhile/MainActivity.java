@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
                     editor.putString("userData", result);
                     editor.apply();
                     Intent queueList = new Intent(MainActivity.this, QueueListActivity.class);
+                    queueList.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_TASK_ON_HOME);
                     startActivity(queueList);
                 }
             }).execute("method", "userData");
@@ -79,6 +80,12 @@ public class MainActivity extends AppCompatActivity {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        finish();
     }
 
     @Override
