@@ -33,6 +33,14 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 title.setText(data.getString("realname"));
                 TextView location = (TextView) mCardView.findViewById(R.id.queuee_location);
                 location.setText(data.getString("location"));
+                TextView comment = (TextView) mCardView.findViewById(R.id.queuee_comment);
+                comment.setText(data.getString("comment"));
+                TextView description = (TextView) mCardView.findViewById(R.id.queuee_description);
+                if(data.getBoolean("help")) {
+                    description.setText("Help");
+                } else {
+                    description.setText("Present");
+                }
 
                 if(firstInQueue &&!data.getBoolean("gettingHelp")){
                     title.setText("\u25B6 " + title.getText());
@@ -43,7 +51,6 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                     title.setTypeface(Typeface.DEFAULT);
                     location.setTypeface(Typeface.DEFAULT);
                 }
-
             } catch (JSONException e) {
                 //TODO
             }
