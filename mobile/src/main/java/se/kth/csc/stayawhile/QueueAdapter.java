@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> {
 
@@ -44,11 +45,18 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 TextView comment = (TextView) mCardView.findViewById(R.id.queuee_comment);
                 comment.setText(data.getString("comment"));
                 TextView description = (TextView) mCardView.findViewById(R.id.queuee_description);
-                RelativeLayout rel = (RelativeLayout) mCardView.findViewById(R.id.queuee_background);
+                View titleBar = mCardView.findViewById(R.id.queuee_background);
+                View actions = mCardView.findViewById(R.id.queuee_actions);
+
                 if (data.getBoolean("help")) {
                     description.setText("Help");
                 } else {
                     description.setText("Present");
+                }
+                if (QueueAdapter.this.helpedByMe(data)) {
+                    actions.setVisibility(View.VISIBLE);
+                } else {
+                    actions.setVisibility(View.GONE);
                 }
                 if (QueueAdapter.this.helpedByMe(data) || (!data.getBoolean("gettingHelp") && position == 0)) {
                     title.setText("\u25B6 " + title.getText());
@@ -59,9 +67,9 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                     location.setTypeface(Typeface.DEFAULT);
                 }
                 if (data.getBoolean("gettingHelp")) {
-                    rel.setBackgroundColor(mCardView.getResources().getColor(R.color.colorPrimary));
+                    titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorPrimary));
                 } else {
-                    rel.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
+                    titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
 
                 }
             } catch (JSONException e) {
@@ -190,7 +198,6 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
 
     @Override
     public QueueAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        // create a new view
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.queuee, parent, false);
         return new ViewHolder(v);
     }
