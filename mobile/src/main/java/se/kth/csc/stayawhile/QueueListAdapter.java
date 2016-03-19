@@ -54,16 +54,13 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         }
     }
 
-    // Provide a suitable constructor (depends on the kind of dataset)
     public QueueListAdapter(JSONArray myDataset, Context context) {
         mDataset = myDataset;
         mContext = context;
     }
 
-    // Create new views (invoked by the layout manager)
     @Override
     public QueueListAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        // create a new view
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.queue, parent, false);
         return new ViewHolder(v);
     }
@@ -79,7 +76,6 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         }
     }
 
-    // Return the size of your dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {
         return mDataset.length();
