@@ -1,5 +1,6 @@
 package se.kth.csc.stayawhile;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import android.view.MenuItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
@@ -20,12 +22,18 @@ public class QueueListActivity extends AppCompatActivity {
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
 
+    private JSONObject mUserData;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_queuelist);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        try {
+            mUserData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
+        } catch (JSONException json) {
+        }
 
         mRecyclerView = (RecyclerView) findViewById(R.id.queue_list);
         mRecyclerView.setHasFixedSize(true);
@@ -47,7 +55,7 @@ public class QueueListActivity extends AppCompatActivity {
     }
 
     private void onQueueUpdate(JSONArray queues) {
-        mAdapter = new QueueListAdapter(queues, this);
+        mAdapter = new QueueListAdapter(queues, this, mUserData);
         mRecyclerView.setAdapter(mAdapter);
     }
 
