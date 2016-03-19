@@ -2,7 +2,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="se.kth.csc.stayawhile.MainActivity">
+
     <item
+        android:id="@+id/actionRemove"
         android:orderInCategory="100"
-        android:title="Remove from queue"/>
+        android:title="Remove from queue"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/actionMessage"
+        android:orderInCategory="100"
+        android:title="Send Message"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/actionHelp"
+        android:orderInCategory="100"
+        android:title="Help"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/actioBadLocation"
+        android:orderInCategory="100"
+        android:title="Bad Location"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/actionCompletion"
+        android:orderInCategory="100"
+        android:title="Completion"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/actionComment"
+        android:orderInCategory="100"
+        android:title="Comment"
+        app:showAsAction="never"/>
 </menu>
