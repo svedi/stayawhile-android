@@ -20,7 +20,7 @@ import java.util.List;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import se.kth.csc.stayawhile.swipe.SwipeableRecyclerViewTouchListener;
+import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
 public class QueueActivity extends AppCompatActivity {
 
@@ -60,20 +60,12 @@ public class QueueActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
-        SwipeableRecyclerViewTouchListener swipeTouchListener =
-                new SwipeableRecyclerViewTouchListener(mRecyclerView,
-                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
-                            @Override
-                            public boolean canSwipeLeft(int position) {
-                                return true;
-                            }
-
-                            public boolean canSwipeRight(int position) {
-                                return mAdapter.isWaiting(position);
-                            }
+        QueueTouchListener swipeTouchListener =
+                new QueueTouchListener(mRecyclerView,
+                        new QueueTouchListener.QueueSwipeListener() {
 
                             @Override
-                            public void onDismissedBySwipeLeft(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                            public void onDismiss(RecyclerView recyclerView, int[] reverseSortedPositions) {
                                 List<JSONObject> users = new ArrayList<>();
                                 for (int position : reverseSortedPositions) {
                                     users.add(mAdapter.onPosition(position));
@@ -86,15 +78,20 @@ public class QueueActivity extends AppCompatActivity {
                             }
 
                             @Override
-                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                            public void onSetHelp(RecyclerView recyclerView, int[] reverseSortedPositions) {
                                 List<JSONObject> users = new ArrayList<>();
                                 for (int position : reverseSortedPositions) {
                                     users.add(mAdapter.onPosition(position));
-                                    mAdapter.removePosition(position);
                                 }
-                                mAdapter.notifyDataSetChanged();
                                 for (JSONObject user : users) {
-                                    sendHelp(user);
+                                    try {
+                                        if (user.getBoolean("gettingHelp")) {
+                                            sendStopHelp(user);
+                                        } else {
+                                            sendHelp(user);
+                                        }
+                                    } catch (JSONException e) {
+                                    }
                                 }
                             }
                         });
@@ -152,6 +149,16 @@ public class QueueActivity extends AppCompatActivity {
         });
         mSocket.connect();
         mSocket.emit("listen", mQueueName);
+    }
+
+    private void sendStopHelp(JSONObject user) {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("ugKthid", user.get("ugKthid"));
+            obj.put("queueName", mQueueName);
+            mSocket.emit("stopHelp", obj);
+        } catch (JSONException e) {
+        }
     }
 
     private void sendHelp(JSONObject user) {
