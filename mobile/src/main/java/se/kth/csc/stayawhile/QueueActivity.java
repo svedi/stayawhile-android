@@ -31,6 +31,7 @@ public class QueueActivity extends AppCompatActivity {
     private Socket mSocket;
     private JSONObject mQueue;
     private String mQueueName;
+    private String mUgid;
 
     {
         try {
@@ -43,6 +44,11 @@ public class QueueActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.mQueueName = getIntent().getStringExtra("queue");
+        try {
+            JSONObject userData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
+            this.mUgid = userData.getString("ugKthid");
+        } catch (JSONException json) {
+        }
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -254,7 +260,7 @@ public class QueueActivity extends AppCompatActivity {
 
     private void onQueueUpdate() {
         try {
-            mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), this);
+            mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), mUgid);
             mRecyclerView.setAdapter(mAdapter);
         } catch (JSONException e) {
         }
