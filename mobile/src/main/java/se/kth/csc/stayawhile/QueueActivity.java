@@ -1,5 +1,6 @@
 package se.kth.csc.stayawhile;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -69,7 +70,7 @@ public class QueueActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-        }).execute("method", "queue/" + mQueueName);
+        }).execute("method", "queue/" + Uri.encode(mQueueName));
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
