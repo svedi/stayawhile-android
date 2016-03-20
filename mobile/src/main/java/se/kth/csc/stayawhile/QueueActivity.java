@@ -3,6 +3,8 @@ package se.kth.csc.stayawhile;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -24,7 +26,7 @@ import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
-public class QueueActivity extends AppCompatActivity implements BroadcastDialogFragment.BroadcastListener {
+public class QueueActivity extends AppCompatActivity implements MessageDialogFragment.MessageListener, QueueAdapter.StudentActionListener {
 
     private RecyclerView mRecyclerView;
     private QueueAdapter mAdapter;
@@ -34,6 +36,7 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
     private JSONObject mQueue;
     private String mQueueName;
     private String mUgid;
+    private PowerManager.WakeLock mWakeLock;
 
     {
         try {
@@ -93,6 +96,7 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
                                             sendHelp(user);
                                         }
                                     } catch (JSONException e) {
+                                        e.printStackTrace();
                                     }
                                 }
                             }
@@ -103,6 +107,7 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
         registerForContextMenu(mRecyclerView);
 
         sendQueueUpdate();
+        final Handler h = new Handler();
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
@@ -133,9 +138,14 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
         });
         mSocket.on("stopHelp", new Emitter.Listener() {
             @Override
-            public void call(Object... args) {
-                System.out.println("stopHelp " + Arrays.toString(args));
-                setStopHelp(args);
+            public void call(final Object... args) {
+                h.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("stopHelp " + Arrays.toString(args));
+                        setStopHelp(args);
+                    }
+                });
             }
         });
         mSocket.on("msg", new Emitter.Listener() {
@@ -146,6 +156,17 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
         });
         mSocket.connect();
         mSocket.emit("listen", mQueueName);
+        PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "QueueActivity");
+        mWakeLock.acquire();
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mSocket.disconnect();
+        mWakeLock.release();
     }
 
     private void sendQueueUpdate() {
@@ -166,11 +187,13 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
 
     private void sendStopHelp(JSONObject user) {
         try {
+            System.out.println("send stopHelp " + user);
             JSONObject obj = new JSONObject();
             obj.put("ugKthid", user.get("ugKthid"));
             obj.put("queueName", mQueueName);
             mSocket.emit("stopHelp", obj);
         } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
@@ -179,8 +202,10 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
             JSONObject obj = new JSONObject();
             obj.put("ugKthid", user.get("ugKthid"));
             obj.put("queueName", mQueueName);
+            System.out.println("send help " + obj);
             mSocket.emit("help", obj);
         } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
@@ -226,6 +251,7 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
                 mAdapter.add(existing);
             }
         } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
@@ -303,15 +329,9 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
         return false;
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mSocket.disconnect();
-    }
-
     private void onQueueUpdate() {
         try {
-            mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), mUgid);
+            mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), this, mUgid);
             mRecyclerView.setAdapter(mAdapter);
             supportInvalidateOptionsMenu();
         } catch (JSONException e) {
@@ -350,11 +370,11 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
         switch (id) {
             case R.id.action_broadcast:
             case R.id.action_broadcast_faculty:
-                BroadcastDialogFragment fragment = new BroadcastDialogFragment();
+                MessageDialogFragment fragment = new MessageDialogFragment();
                 Bundle args = new Bundle();
-                args.putInt("target", id);
+                args.putInt("target", id == R.id.action_broadcast ? BROADCAST_ALL : BROADCAST_FACULTY);
                 fragment.setArguments(args);
-                fragment.show(getFragmentManager(), "BroadcastDialogFragment");
+                fragment.show(getFragmentManager(), "MessageDialogFragment");
                 return true;
             case R.id.action_lock:
                 if (isLocked()) {
@@ -368,20 +388,37 @@ public class QueueActivity extends AppCompatActivity implements BroadcastDialogF
     }
 
     @Override
-    public void broadcast(String message, int target) {
+    public void message(String message, Bundle arguments) {
         try {
+            int target = arguments.getInt("target");
             JSONObject obj = new JSONObject();
             obj.put("queueName", mQueueName);
             obj.put("message", message);
-            if (target == R.id.action_broadcast) {
+            if (target == BROADCAST_ALL) {
                 mSocket.emit("broadcast", obj);
-            } else if (target == R.id.action_broadcast_faculty) {
+            } else if (target == BROADCAST_FACULTY) {
                 mSocket.emit("broadcastFaculty", obj);
+            } else if (target == PRIVATE_MESSAGE) {
+                obj.put("ugKthid", arguments.get("ugKthid"));
+                mSocket.emit("messageUser", obj);
             } else {
-                throw new RuntimeException("broadcast with invalid target");
+                throw new RuntimeException("message with invalid target");
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void cantFind(JSONObject student) {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("user", student);
+            obj.put("queueName", mQueueName);
+            obj.put("type", "unknown");
+            mSocket.emit("badLocation", obj);
+            sendStopHelp(student);
+        } catch (JSONException e) {
         }
     }
 }

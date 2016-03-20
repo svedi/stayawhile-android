@@ -74,49 +74,14 @@
             >
 
             <Button
+                android:id="@+id/queuee_action_cantfind"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/holo_orange_light"
+                android:background="@color/colorPrimaryDark"
                 android:padding="@dimen/fab_margin"
                 android:text="Can't find student"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_marginLeft="@dimen/fab_margin"
-                android:layout_marginRight="@dimen/fab_margin"
-                android:layout_marginTop="@dimen/fab_margin"
-                />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/holo_orange_light"
-                android:padding="@dimen/fab_margin"
-                android:text="Send message"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_marginLeft="@dimen/fab_margin"
-                android:layout_marginRight="@dimen/fab_margin"
-                android:layout_marginTop="@dimen/fab_margin"
-                />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/holo_orange_light"
-                android:padding="@dimen/fab_margin"
-                android:text="Add completion"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_marginLeft="@dimen/fab_margin"
-                android:layout_marginRight="@dimen/fab_margin"
-                android:layout_marginTop="@dimen/fab_margin"
-                />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/holo_orange_light"
-                android:padding="@dimen/fab_margin"
-                android:text="Add comment"
-                android:textColor="@android:color/primary_text_light"
-                android:layout_margin="@dimen/fab_margin"
+                android:textColor="@android:color/primary_text_dark"
+                android:layout_margin="16dp"
                 />
 
         </LinearLayout>

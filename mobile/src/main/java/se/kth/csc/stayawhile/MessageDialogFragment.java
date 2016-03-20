@@ -8,20 +8,19 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.widget.EditText;
 
-public class BroadcastDialogFragment extends DialogFragment {
+public class MessageDialogFragment extends DialogFragment {
 
-    private BroadcastListener mCallback;
+    private MessageListener mCallback;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final int type = getArguments().getInt("target");
         final EditText input = new EditText(getActivity());
         return new AlertDialog.Builder(getActivity())
-                .setTitle("Send broadcast")
+                .setTitle("Send message")
                 .setView(input)
                 .setPositiveButton("Send", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        mCallback.broadcast(input.getText().toString(), type);
+                        mCallback.message(input.getText().toString(), getArguments());
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -34,10 +33,15 @@ public class BroadcastDialogFragment extends DialogFragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        mCallback = (BroadcastListener) activity;
+        mCallback = (MessageListener) activity;
     }
 
-    public interface BroadcastListener {
-        void broadcast(String message, int target);
+    public interface MessageListener {
+
+        int BROADCAST_ALL = 0;
+        int BROADCAST_FACULTY = 1;
+        int PRIVATE_MESSAGE = 2;
+
+        void message(String message, Bundle arguments);
     }
 }
