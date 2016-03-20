@@ -1,6 +1,7 @@
 package se.kth.csc.stayawhile;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -154,6 +155,9 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 System.out.println("msg " + Arrays.toString(args));
             }
         });
+        Intent serviceIntent = new Intent(this, NotifService.class);
+        serviceIntent.setData(Uri.EMPTY.buildUpon().appendQueryParameter("queue", mQueueName).appendQueryParameter("ugid", mUgid).build());
+        startService(serviceIntent);
         mSocket.connect();
         mSocket.emit("listen", mQueueName);
         PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE);

@@ -25,6 +25,14 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
     private List<JSONObject> mGettingHelpByAssistant;
     private String mUgid;
 
+    public List<JSONObject> getWaiting() {
+        return mWaiting;
+    }
+
+    public List<JSONObject> getHelpedByMe() {
+        return mGettingHelpByAssistant;
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
 
         public View mCardView;
