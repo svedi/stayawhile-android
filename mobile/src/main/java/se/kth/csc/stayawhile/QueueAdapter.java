@@ -1,12 +1,13 @@
 package se.kth.csc.stayawhile;
 
 import android.graphics.Typeface;
+import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
+import android.widget.Button;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -15,10 +16,10 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
 public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> {
 
+    private QueueActivity mActivity;
     private List<JSONObject> mWaiting;
     private List<JSONObject> mGettingHelp;
     private List<JSONObject> mGettingHelpByAssistant;
@@ -33,6 +34,29 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             super(v);
             mCardView = v;
             v.setOnCreateContextMenuListener(this);
+            Button cantFind = (Button) mCardView.findViewById(R.id.queuee_action_cantfind);
+            cantFind.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mActivity.cantFind(mData);
+                }
+            });
+            /*Button sendMessage = (Button) mCardView.findViewById(R.id.queuee_action_message);
+            sendMessage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        MessageDialogFragment frag = new MessageDialogFragment();
+                        Bundle bundle = new Bundle();
+                        bundle.putInt("target", MessageDialogFragment.MessageListener.PRIVATE_MESSAGE);
+                        bundle.putString("ugKthid", mData.getString("ugKthid"));
+                        frag.setArguments(bundle);
+                        frag.show(mActivity.getFragmentManager(), "MessageDialogFragment");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });*/
         }
 
         public void setData(JSONObject data, int position) {
@@ -41,7 +65,11 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 TextView title = (TextView) mCardView.findViewById(R.id.queuee_name);
                 title.setText(data.getString("realname"));
                 TextView location = (TextView) mCardView.findViewById(R.id.queuee_location);
-                location.setText(data.getString("location"));
+                if (data.getBoolean("badLocation")) {
+                    location.setText("???");
+                } else {
+                    location.setText(data.getString("location"));
+                }
                 TextView comment = (TextView) mCardView.findViewById(R.id.queuee_comment);
                 comment.setText(data.getString("comment"));
                 TextView description = (TextView) mCardView.findViewById(R.id.queuee_description);
@@ -68,11 +96,16 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 }
                 if (data.getBoolean("gettingHelp")) {
                     titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorPrimary));
+                } else if (data.getBoolean("badLocation")) {
+                    titleBar.setBackgroundColor(mCardView.getResources().getColor(android.R.color.holo_red_dark));
                 } else {
                     titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
-
                 }
-            } catch (JSONException e) {
+            } catch (
+                    JSONException e
+                    )
+
+            {
                 //TODO
             }
         }
@@ -85,7 +118,8 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         }
     }
 
-    public QueueAdapter(JSONArray myDataset, String ugid) {
+    public QueueAdapter(JSONArray myDataset, QueueActivity activity, String ugid) {
+        mActivity = activity;
         mWaiting = new ArrayList<>();
         mGettingHelp = new ArrayList<>();
         mGettingHelpByAssistant = new ArrayList<>();
@@ -168,8 +202,12 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
     private int insertInto(List<JSONObject> queue, JSONObject person) {
         try {
             int at = 0;
-            while (at < queue.size() && queue.get(at).getLong("time") < person.getLong("time"))
-                at++;
+            if (person.getBoolean("badLocation")) {
+                at = queue.size();
+            } else {
+                while (at < queue.size() && queue.get(at).getLong("time") < person.getLong("time"))
+                    at++;
+            }
             queue.add(at, person);
             return at;
         } catch (JSONException js) {
@@ -208,5 +246,8 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         holder.setData(queue, position);
     }
 
+    public interface StudentActionListener {
+        void cantFind(JSONObject student);
+    }
 
 }
