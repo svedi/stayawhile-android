@@ -34,12 +34,20 @@ public class QueueListActivity extends AppCompatActivity {
             mUserData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
         } catch (JSONException json) {
         }
-
         mRecyclerView = (RecyclerView) findViewById(R.id.queue_list);
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
+        sendQueueList();
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sendQueueList();
+    }
+
+    private void sendQueueList() {
         new APITask(new APICallback() {
             @Override
             public void r(String result) {

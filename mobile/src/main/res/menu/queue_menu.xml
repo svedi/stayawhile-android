@@ -1,0 +1,20 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="se.kth.csc.stayawhile.MainActivity">
+    <item
+        android:id="@+id/action_lock"
+        android:orderInCategory="100"
+        android:title=""
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_broadcast"
+        android:orderInCategory="100"
+        android:title="Broadcast"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_broadcast_faculty"
+        android:orderInCategory="100"
+        android:title="Broadcast faculty"
+        app:showAsAction="never" />
+</menu>
