@@ -7,6 +7,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,7 +24,7 @@ import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
-public class QueueActivity extends AppCompatActivity {
+public class QueueActivity extends AppCompatActivity implements BroadcastDialogFragment.BroadcastListener {
 
     private RecyclerView mRecyclerView;
     private QueueAdapter mAdapter;
@@ -100,18 +102,7 @@ public class QueueActivity extends AppCompatActivity {
 
         registerForContextMenu(mRecyclerView);
 
-        new APITask(new APICallback() {
-            @Override
-            public void r(String result) {
-                try {
-                    mQueue = new JSONObject(result);
-                    QueueActivity.this.onQueueUpdate();
-                } catch (JSONException e) {
-                    //TODO
-                    e.printStackTrace();
-                }
-            }
-        }).execute("method", "queue/" + Uri.encode(mQueueName));
+        sendQueueUpdate();
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
@@ -147,8 +138,30 @@ public class QueueActivity extends AppCompatActivity {
                 setStopHelp(args);
             }
         });
+        mSocket.on("msg", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                System.out.println("msg " + Arrays.toString(args));
+            }
+        });
         mSocket.connect();
         mSocket.emit("listen", mQueueName);
+    }
+
+    private void sendQueueUpdate() {
+        new APITask(new APICallback() {
+            @Override
+            public void r(String result) {
+                try {
+                    mQueue = new JSONObject(result);
+                    System.out.println("update " + mQueue);
+                    QueueActivity.this.onQueueUpdate();
+                } catch (JSONException e) {
+                    //TODO
+                    e.printStackTrace();
+                }
+            }
+        }).execute("method", "queue/" + Uri.encode(mQueueName));
     }
 
     private void sendStopHelp(JSONObject user) {
@@ -177,6 +190,26 @@ public class QueueActivity extends AppCompatActivity {
             obj.put("user", user);
             obj.put("queueName", mQueueName);
             mSocket.emit("kick", obj);
+        } catch (JSONException e) {
+        }
+    }
+
+    private void sendLock() {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("queueName", mQueueName);
+            mSocket.emit("lock", obj);
+            sendQueueUpdate();
+        } catch (JSONException e) {
+        }
+    }
+
+    private void sendUnlock() {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("queueName", mQueueName);
+            mSocket.emit("unlock", obj);
+            sendQueueUpdate();
         } catch (JSONException e) {
         }
     }
@@ -259,6 +292,17 @@ public class QueueActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isLocked() {
+        try {
+            if (mQueue.getBoolean("locked")) {
+                return true;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -269,6 +313,7 @@ public class QueueActivity extends AppCompatActivity {
         try {
             mAdapter = new QueueAdapter(mQueue.getJSONArray("queue"), mUgid);
             mRecyclerView.setAdapter(mAdapter);
+            supportInvalidateOptionsMenu();
         } catch (JSONException e) {
         }
     }
@@ -277,4 +322,67 @@ public class QueueActivity extends AppCompatActivity {
         onBackPressed();
         return true;
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.queue_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (mQueue != null) {
+            MenuItem lockItem = menu.findItem(R.id.action_lock);
+            if (isLocked()) {
+                lockItem.setIcon(R.drawable.ic_lock_open_white_24dp);
+                lockItem.setTitle("Unlock");
+            } else {
+                lockItem.setIcon(R.drawable.ic_lock_outline_white_24dp);
+                lockItem.setTitle("Lock");
+            }
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        final int id = item.getItemId();
+        switch (id) {
+            case R.id.action_broadcast:
+            case R.id.action_broadcast_faculty:
+                BroadcastDialogFragment fragment = new BroadcastDialogFragment();
+                Bundle args = new Bundle();
+                args.putInt("target", id);
+                fragment.setArguments(args);
+                fragment.show(getFragmentManager(), "BroadcastDialogFragment");
+                return true;
+            case R.id.action_lock:
+                if (isLocked()) {
+                    sendUnlock();
+                } else {
+                    sendLock();
+                }
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void broadcast(String message, int target) {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("queueName", mQueueName);
+            obj.put("message", message);
+            if (target == R.id.action_broadcast) {
+                mSocket.emit("broadcast", obj);
+            } else if (target == R.id.action_broadcast_faculty) {
+                mSocket.emit("broadcastFaculty", obj);
+            } else {
+                throw new RuntimeException("broadcast with invalid target");
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
