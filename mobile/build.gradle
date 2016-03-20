@@ -35,4 +35,5 @@ dependencies {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
+    compile 'com.android.support:support-v4:23.0.0'
 }

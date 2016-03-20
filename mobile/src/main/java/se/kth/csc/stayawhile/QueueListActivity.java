@@ -2,7 +2,9 @@ package se.kth.csc.stayawhile;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -38,22 +40,50 @@ public class QueueListActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
-        sendQueueList();
+        final SwipeRefreshLayout refresh = (SwipeRefreshLayout) findViewById(R.id.queue_list_refresh);
+        refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                new APITask(new APICallback() {
+                    @Override
+                    public void r(String result) {
+                        try {
+                            SharedPreferences.Editor e = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
+                            e.putString("userData", result);
+                            e.apply();
+                            mUserData = new JSONObject(result);
+                            sendQueueList(new Runnable() {
+                                @Override
+                                public void run() {
+                                    refresh.setRefreshing(false);
+                                }
+                            });
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).execute("method", "userData");
+            }
+        });
+        sendQueueList(null);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        sendQueueList();
+        sendQueueList(null);
     }
 
-    private void sendQueueList() {
+    private void sendQueueList(final Runnable runnable) {
         new APITask(new APICallback() {
             @Override
             public void r(String result) {
                 try {
                     JSONArray queues = new JSONArray(result);
                     QueueListActivity.this.onQueueUpdate(queues);
+                    if (runnable != null) {
+                        runnable.run();
+                    }
                 } catch (JSONException e) {
                     //TODO
                     e.printStackTrace();
