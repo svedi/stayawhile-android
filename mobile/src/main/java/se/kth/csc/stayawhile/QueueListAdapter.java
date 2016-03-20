@@ -1,8 +1,8 @@
 package se.kth.csc.stayawhile;
 
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -38,16 +38,25 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (isAssistant(mData)) {
-                        Intent intent = new Intent(activity, QueueActivity.class);
-                        try {
+                    try {
+                        if (isAssistant(mData)) {
+                            Intent intent = new Intent(activity, QueueActivity.class);
                             intent.putExtra("queue", mData.getString("name"));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                            QueueListAdapter.this.activity.startActivity(intent);
+                        } else {
+                            new APITask(new APICallback() {
+                                @Override
+                                public void r(String result) {
+                                    Bundle args = new Bundle();
+                                    args.putString("queue", result);
+                                    QueueAccessRequestDialogFragment q = new QueueAccessRequestDialogFragment();
+                                    q.setArguments(args);
+                                    q.show(activity.getFragmentManager(), "QueueAccessRequestDialogFragment");
+                                }
+                            }).execute("method", "queue/" + Uri.encode(mData.getString("name")));
                         }
-                        QueueListAdapter.this.activity.startActivity(intent);
-                    } else {
-                        new QueueAccessRequestDialogFragment().show(activity.getFragmentManager(), "QueueAccessRequestDialogFragment");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
                 }
             });
