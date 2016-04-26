@@ -1,7 +1,6 @@
 package se.kth.csc.stayawhile;
 
 import android.graphics.Typeface;
-import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -19,7 +18,7 @@ import java.util.List;
 
 public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> {
 
-    private QueueActivity mActivity;
+    private StudentActionListener mActionListener;
     private List<JSONObject> mWaiting;
     private List<JSONObject> mGettingHelp;
     private List<JSONObject> mGettingHelpByAssistant;
@@ -46,25 +45,9 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             cantFind.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mActivity.cantFind(mData);
+                    mActionListener.cantFind(mData);
                 }
             });
-            /*Button sendMessage = (Button) mCardView.findViewById(R.id.queuee_action_message);
-            sendMessage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    try {
-                        MessageDialogFragment frag = new MessageDialogFragment();
-                        Bundle bundle = new Bundle();
-                        bundle.putInt("target", MessageDialogFragment.MessageListener.PRIVATE_MESSAGE);
-                        bundle.putString("ugKthid", mData.getString("ugKthid"));
-                        frag.setArguments(bundle);
-                        frag.show(mActivity.getFragmentManager(), "MessageDialogFragment");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });*/
         }
 
         public void setData(JSONObject data, int position) {
@@ -109,12 +92,8 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 } else {
                     titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
                 }
-            } catch (
-                    JSONException e
-                    )
-
-            {
-                //TODO
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -127,7 +106,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
     }
 
     public QueueAdapter(JSONArray myDataset, QueueActivity activity, String ugid) {
-        mActivity = activity;
+        mActionListener = activity;
         mWaiting = new ArrayList<>();
         mGettingHelp = new ArrayList<>();
         mGettingHelpByAssistant = new ArrayList<>();
@@ -149,7 +128,8 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 } else {
                     mWaiting.add(obj);
                 }
-            } catch (JSONException je) {
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -158,7 +138,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         try {
             return user.getBoolean("gettingHelp") && user.has("helper") && user.getString("helper").equals(mUgid);
         } catch (JSONException e) {
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
@@ -170,6 +150,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
                 }
             }
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
         return -1;
     }
@@ -204,6 +185,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             }
             if (getItemCount() > 1) notifyItemChanged(1);
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -218,9 +200,9 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             }
             queue.add(at, person);
             return at;
-        } catch (JSONException js) {
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
-        return -1;
     }
 
     public void removePosition(int pos) {
@@ -230,11 +212,6 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         else mGettingHelp.remove(pos - mGettingHelpByAssistant.size() - mWaiting.size());
         notifyItemRemoved(pos);
         if (getItemCount() > 0) notifyItemChanged(0);
-    }
-
-
-    public boolean isWaiting(int position) {
-        return mGettingHelpByAssistant.size() <= position && position < mGettingHelpByAssistant.size() + mWaiting.size();
     }
 
     @Override

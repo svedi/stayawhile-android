@@ -16,6 +16,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import se.kth.csc.stayawhile.api.APICallback;
+import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class QueueListActivity extends AppCompatActivity {
@@ -34,7 +36,8 @@ public class QueueListActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         try {
             mUserData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
-        } catch (JSONException json) {
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
         mRecyclerView = (RecyclerView) findViewById(R.id.queue_list);
         mRecyclerView.setHasFixedSize(true);
@@ -59,8 +62,7 @@ public class QueueListActivity extends AppCompatActivity {
                                 }
                             });
                         } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+                            throw new RuntimeException(e);                        }
                     }
                 }).execute("method", "userData");
             }
@@ -85,8 +87,7 @@ public class QueueListActivity extends AppCompatActivity {
                         runnable.run();
                     }
                 } catch (JSONException e) {
-                    //TODO
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
             }
         }).execute("method", "queueList");

@@ -16,6 +16,8 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.concurrent.ExecutionException;
 
+import se.kth.csc.stayawhile.api.APICallback;
+import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class MainActivity extends AppCompatActivity {

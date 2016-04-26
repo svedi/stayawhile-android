@@ -20,6 +20,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import se.kth.csc.stayawhile.api.APICallback;
+import se.kth.csc.stayawhile.api.APITask;
+
 public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.ViewHolder> {
 
     private JSONObject mUserData;
@@ -56,7 +59,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                             }).execute("method", "queue/" + Uri.encode(mData.getString("name")));
                         }
                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
             });
@@ -86,7 +89,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                     length.setVisibility(View.VISIBLE);
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
     }
@@ -105,6 +108,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                     mOtherQueues.add(queue);
                 }
             } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
         }
         final Comparator<JSONObject> nameComparator = new Comparator<JSONObject>() {
@@ -138,7 +142,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return false;
     }
