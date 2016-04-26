@@ -1,11 +1,16 @@
 package se.kth.csc.stayawhile;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,6 +30,8 @@ import java.util.List;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import se.kth.csc.stayawhile.api.APICallback;
+import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
 public class QueueActivity extends AppCompatActivity implements MessageDialogFragment.MessageListener, QueueAdapter.StudentActionListener {
@@ -43,6 +50,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         try {
             mSocket = IO.socket("http://queue.csc.kth.se/");
         } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -54,6 +62,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             JSONObject userData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
             this.mUgid = userData.getString("ugKthid");
         } catch (JSONException json) {
+            throw new RuntimeException(json);
         }
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -62,12 +71,13 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(mQueueName);
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.queue_people);
-        mRecyclerView.setHasFixedSize(true);
+        this.mRecyclerView = (RecyclerView) findViewById(R.id.queue_people);
+        this.mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-        QueueTouchListener swipeTouchListener =
-                new QueueTouchListener(mRecyclerView,
+        this.mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.addOnItemTouchListener(
+                new QueueTouchListener(
+                        mRecyclerView,
                         new QueueTouchListener.QueueSwipeListener() {
 
                             @Override
@@ -97,43 +107,47 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                                             sendHelp(user);
                                         }
                                     } catch (JSONException e) {
-                                        e.printStackTrace();
+                                        throw new RuntimeException(e);
                                     }
                                 }
                             }
-                        });
-
-        mRecyclerView.addOnItemTouchListener(swipeTouchListener);
+                        }
+                )
+        );
 
         registerForContextMenu(mRecyclerView);
 
         sendQueueUpdate();
+        PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "QueueActivity");
+        mWakeLock.acquire();
+        setSocketListeners();
+        setupNotifications();
+    }
+
+    private void setSocketListeners() {
         final Handler h = new Handler();
         mSocket.on("join", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                System.out.println("join " + Arrays.toString(args));
                 newUser(args);
             }
         });
         mSocket.on("leave", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                System.out.println("leave " + Arrays.toString(args));
                 removeUser(args);
             }
         });
         mSocket.on("update", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                System.out.println("update " + Arrays.toString(args));
                 updateUser(args);
             }
         });
         mSocket.on("help", new Emitter.Listener() {
             @Override
             public void call(Object... args) {
-                System.out.println("help " + Arrays.toString(args));
                 setHelp(args);
             }
         });
@@ -143,7 +157,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 h.post(new Runnable() {
                     @Override
                     public void run() {
-                        System.out.println("stopHelp " + Arrays.toString(args));
                         setStopHelp(args);
                     }
                 });
@@ -155,14 +168,14 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 System.out.println("msg " + Arrays.toString(args));
             }
         });
-        Intent serviceIntent = new Intent(this, NotifService.class);
-        serviceIntent.setData(Uri.EMPTY.buildUpon().appendQueryParameter("queue", mQueueName).appendQueryParameter("ugid", mUgid).build());
-        startService(serviceIntent);
+        mSocket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                mSocket.emit("listen", mQueueName);
+                sendQueueUpdate();
+            }
+        });
         mSocket.connect();
-        mSocket.emit("listen", mQueueName);
-        PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE);
-        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "QueueActivity");
-        mWakeLock.acquire();
     }
 
 
@@ -179,11 +192,9 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             public void r(String result) {
                 try {
                     mQueue = new JSONObject(result);
-                    System.out.println("update " + mQueue);
                     QueueActivity.this.onQueueUpdate();
                 } catch (JSONException e) {
-                    //TODO
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
             }
         }).execute("method", "queue/" + Uri.encode(mQueueName));
@@ -197,7 +208,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             obj.put("queueName", mQueueName);
             mSocket.emit("stopHelp", obj);
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -209,7 +220,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             System.out.println("send help " + obj);
             mSocket.emit("help", obj);
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -220,6 +231,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             obj.put("queueName", mQueueName);
             mSocket.emit("kick", obj);
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -230,6 +242,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             mSocket.emit("lock", obj);
             sendQueueUpdate();
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -240,6 +253,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             mSocket.emit("unlock", obj);
             sendQueueUpdate();
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -255,7 +269,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 mAdapter.add(existing);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -263,7 +277,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         try {
             JSONObject user = (JSONObject) args[0];
             int pos = mAdapter.positionOf(user.getString("ugKthid"));
-            System.out.println("found user at " + mAdapter);
             if (pos >= 0) {
                 JSONObject existing = mAdapter.onPosition(pos);
                 mAdapter.removePosition(pos);
@@ -274,6 +287,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 mAdapter.add(existing);
             }
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -285,6 +299,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 mAdapter.set(pos, user);
             }
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
 
         try {
@@ -303,6 +318,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 }
             });
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -319,18 +335,16 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 mAdapter.removePosition(pos);
             }
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private boolean isLocked() {
         try {
-            if (mQueue.getBoolean("locked")) {
-                return true;
-            }
+            return mQueue.getBoolean("locked");
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return false;
     }
 
     private void onQueueUpdate() {
@@ -339,6 +353,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             mRecyclerView.setAdapter(mAdapter);
             supportInvalidateOptionsMenu();
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -409,7 +424,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 throw new RuntimeException("message with invalid target");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -423,7 +438,34 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             mSocket.emit("badLocation", obj);
             sendStopHelp(student);
         } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private void setupNotifications() {
+        mSocket.on("join", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                if (mAdapter.getWaiting().size() == 0 && mAdapter.getHelpedByMe().size() == 0)
+                    return;
+                Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplication())
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle("Stay-A-While")
+                        .setContentText("Someone just joined the queue " + mQueueName)
+                        .setSound(alarmSound);
+                Intent notificationIntent = getIntent();
+                notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                PendingIntent contentIntent = PendingIntent.getActivity(getApplication(), 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                builder.setContentIntent(contentIntent);
+                builder.setAutoCancel(true);
+                builder.setLights(Color.BLUE, 500, 500);
+                builder.setVibrate(new long[]{200, 200, 200});
+                builder.setStyle(new NotificationCompat.InboxStyle());
+                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                manager.notify(mQueueName, 1, builder.build());
+            }
+        });
     }
 }
 

@@ -1,4 +1,4 @@
-package se.kth.csc.stayawhile;
+package se.kth.csc.stayawhile.api;
 
 /**
  * Callback for an API task

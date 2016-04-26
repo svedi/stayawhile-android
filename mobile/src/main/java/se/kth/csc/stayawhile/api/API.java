@@ -1,4 +1,4 @@
-package se.kth.csc.stayawhile;
+package se.kth.csc.stayawhile.api;
 
 import android.util.Log;
 
