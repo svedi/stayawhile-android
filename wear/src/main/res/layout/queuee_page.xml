@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_grey">
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        >
+
+        <TextView
+            android:id="@+id/u_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alexander Viklund"
+            android:textColor="@android:color/white"
+            android:layout_centerHorizontal="true"
+            android:textSize="20sp"/>
+        <TextView
+            android:id="@+id/u_place"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Grey 7"
+            android:textColor="@android:color/white"
+            android:layout_below="@id/u_name"
+            android:layout_centerHorizontal="true"
+            android:textSize="18sp"/>
+        <TextView
+            android:id="@+id/u_lab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/u_place"
+            android:text="Help"
+            android:textColor="@android:color/white"
+            android:layout_centerHorizontal="true"
+            android:textSize="18sp"/>
+        <TextView
+            android:id="@+id/u_comment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/u_lab"
+            android:text="Having huge problems with Lab 3"
+            android:textColor="@android:color/white"
+            android:layout_centerHorizontal="true"
+            android:textSize="12sp"/>
+
+    </RelativeLayout>
+</RelativeLayout>
