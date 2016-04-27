@@ -20,7 +20,7 @@
             android:layout_centerHorizontal="true"
             android:textSize="20sp"/>
         <TextView
-            android:id="@+id/u_place"
+            android:id="@+id/u_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Grey 7"
@@ -29,10 +29,10 @@
             android:layout_centerHorizontal="true"
             android:textSize="18sp"/>
         <TextView
-            android:id="@+id/u_lab"
+            android:id="@+id/u_type"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/u_place"
+            android:layout_below="@id/u_location"
             android:text="Help"
             android:textColor="@android:color/white"
             android:layout_centerHorizontal="true"
@@ -41,7 +41,7 @@
             android:id="@+id/u_comment"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/u_lab"
+            android:layout_below="@id/u_type"
             android:text="Having huge problems with Lab 3"
             android:textColor="@android:color/white"
             android:layout_centerHorizontal="true"

@@ -2,9 +2,7 @@ package se.kth.csc.stayawhile;
 
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
-import android.support.wearable.view.BoxInsetLayout;
 import android.support.wearable.view.GridViewPager;
-import android.widget.TextView;
 
 
 public class MainActivity extends WearableActivity {
