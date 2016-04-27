@@ -1,0 +1,20 @@
+package se.kth.csc.stayawhile;
+
+import com.google.android.gms.wearable.MessageEvent;
+import com.google.android.gms.wearable.WearableListenerService;
+
+/**
+ * Created by willy on 27/04/16.
+ */
+public class WearMessageListener extends WearableListenerService {
+    private static final String SENDING_QUEUE = "/saw_sendingqueue";
+
+    @Override
+    public void onMessageRecieved(MessageEvent messageEvent){
+        if( messageEvent.getPath().equalsIgnoreCase( SENDING_QUEUE ) ) {
+            //String msg = messageEvent.getData();
+        } else {
+            super.onMessageReceived( messageEvent );
+        }
+    }
+}

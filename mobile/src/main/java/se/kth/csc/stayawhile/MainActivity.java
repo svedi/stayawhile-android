@@ -11,6 +11,11 @@ import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
+
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -21,6 +26,7 @@ import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class MainActivity extends AppCompatActivity {
+    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).execute("method", "userData");
+
+
     }
 
     public void onLogin(View view) {
@@ -88,4 +96,47 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
+    private void initGoogleApi(){
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .build();
+
+        mGoogleApiClient.connect();
+    }
+
+    private String getBestNodeId(){
+        String bestNodeId = null;
+        // Find a nearby node or pick one arbitrarily
+        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+        for (Node node : nodes.getNodes()) {
+            if (node.isNearby()) {
+                return node.getId();
+            }
+            bestNodeId = node.getId();
+        }
+        return bestNodeId;
+    }
+
+    private void sendMessage( final String path, final byte[] data ) {
+
+        if (mGoogleApiClient == null)
+            initGoogleApi();
+
+        new Thread( new Runnable() {
+            @Override
+            public void run() {
+                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mGoogleApiClient ).await();
+                for(Node node : nodes.getNodes()) {
+                     Wearable.MessageApi.sendMessage(
+                            mGoogleApiClient, node.getId(), path, data ).await();
+                }
+            }
+        }).start();
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        mGoogleApiClient.disconnect();
+    }
 }
