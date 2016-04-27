@@ -10,7 +10,7 @@ public class WearMessageListener extends WearableListenerService {
     private static final String SENDING_QUEUE = "/saw_sendingqueue";
 
     @Override
-    public void onMessageRecieved(MessageEvent messageEvent){
+    public void onMessageReceived(MessageEvent messageEvent){
         if( messageEvent.getPath().equalsIgnoreCase( SENDING_QUEUE ) ) {
             //String msg = messageEvent.getData();
         } else {
