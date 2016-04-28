@@ -23,7 +23,7 @@ public class AcceptActionFragment extends Fragment {
             public boolean onTouch(View v, MotionEvent event) {
 
                 MainActivity.mMessageListener.sendAttendUser( userid );
-                return false; //TODO: Implement
+                return false;
             }
         });
         return view;

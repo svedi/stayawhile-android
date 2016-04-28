@@ -21,7 +21,7 @@ public class KickActionFragment extends Fragment {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 MainActivity.mMessageListener.sendKickUser( userid );
-                return false; //TODO: Implement
+                return false;
             }
         });
         return view;
