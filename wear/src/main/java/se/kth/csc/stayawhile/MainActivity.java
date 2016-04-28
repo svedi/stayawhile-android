@@ -3,15 +3,15 @@ package se.kth.csc.stayawhile;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.GridViewPager;
+import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Wearable;
 
 
 public class MainActivity extends WearableActivity {
-
-    private GoogleApiClient mGoogleApiClient;
     private WearMessageListener mMessageListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -20,21 +20,12 @@ public class MainActivity extends WearableActivity {
 
         pager.setAdapter(new MainGridPagerAdapter(this, getFragmentManager()));
 
-        initGoogleApi();
-        Wearable.MessageApi.addListener(mGoogleApiClient, mMessageListener);
+        mMessageListener = new WearMessageListener(this);
+        Wearable.MessageApi.addListener(mMessageListener.getApi(), mMessageListener);
     }
-
-    private void initGoogleApi(){
-        mGoogleApiClient = new GoogleApiClient.Builder( this )
-                .addApi( Wearable.API )
-                .build();
-
-        mGoogleApiClient.connect();
-    }
-
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        mGoogleApiClient.disconnect();
+        mMessageListener.disconnectApi();
     }
 }

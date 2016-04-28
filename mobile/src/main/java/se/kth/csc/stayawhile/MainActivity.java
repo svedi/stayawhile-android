@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -26,10 +27,12 @@ import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class MainActivity extends AppCompatActivity {
-    private GoogleApiClient mGoogleApiClient;
+    private static WearMessageHandler wearMessageHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        wearMessageHandler = new WearMessageHandler(this);
+
         super.onCreate(savedInstanceState);
 
         android.webkit.CookieManager.getInstance().setAcceptCookie(true);
@@ -51,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
         }).execute("method", "userData");
 
 
+        Wearable.MessageApi.addListener(wearMessageHandler.getApi(), wearMessageHandler);
+        wearMessageHandler.sendMessage("/saw_sendingqueue", new byte[0]);
     }
 
     public void onLogin(View view) {
@@ -96,47 +101,11 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    private void initGoogleApi(){
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Wearable.API)
-                .build();
 
-        mGoogleApiClient.connect();
-    }
-
-    private String getBestNodeId(){
-        String bestNodeId = null;
-        // Find a nearby node or pick one arbitrarily
-        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
-        for (Node node : nodes.getNodes()) {
-            if (node.isNearby()) {
-                return node.getId();
-            }
-            bestNodeId = node.getId();
-        }
-        return bestNodeId;
-    }
-
-    private void sendMessage( final String path, final byte[] data ) {
-
-        if (mGoogleApiClient == null)
-            initGoogleApi();
-
-        new Thread( new Runnable() {
-            @Override
-            public void run() {
-                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mGoogleApiClient ).await();
-                for(Node node : nodes.getNodes()) {
-                     Wearable.MessageApi.sendMessage(
-                            mGoogleApiClient, node.getId(), path, data ).await();
-                }
-            }
-        }).start();
-    }
 
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        mGoogleApiClient.disconnect();
+        wearMessageHandler.disconnectApi();
     }
 }

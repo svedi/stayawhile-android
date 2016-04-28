@@ -467,5 +467,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             }
         });
     }
+
 }
 
