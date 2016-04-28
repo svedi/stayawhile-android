@@ -61,7 +61,10 @@ public class WearMessageListener extends WearableListenerService {
         mGoogleApiClient.connect();
     }
     public void sendMessage( final String path, final byte[] data ) {
-
+        if (data.length > 100){
+            Log.w("DEV", "Message cannot exceed 100 bytes!");
+            return;
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
