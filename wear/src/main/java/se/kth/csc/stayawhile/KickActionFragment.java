@@ -20,6 +20,7 @@ public class KickActionFragment extends Fragment {
         imageView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                MainActivity.mMessageListener.sendKickUser( userid );
                 return false; //TODO: Implement
             }
         });

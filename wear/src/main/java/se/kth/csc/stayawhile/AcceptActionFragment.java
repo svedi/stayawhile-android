@@ -21,6 +21,8 @@ public class AcceptActionFragment extends Fragment {
         imageView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+
+                MainActivity.mMessageListener.sendAttendUser( userid );
                 return false; //TODO: Implement
             }
         });

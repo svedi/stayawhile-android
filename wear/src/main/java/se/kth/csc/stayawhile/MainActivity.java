@@ -10,7 +10,7 @@ import com.google.android.gms.wearable.Wearable;
 
 
 public class MainActivity extends WearableActivity {
-    private WearMessageListener mMessageListener;
+    public static WearMessageListener mMessageListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
