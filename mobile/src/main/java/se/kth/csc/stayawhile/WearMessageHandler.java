@@ -9,6 +9,9 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Created by Willy on 2016-04-28.
  */
@@ -21,7 +24,8 @@ public class WearMessageHandler extends WearableListenerService{
 
     private GoogleApiClient mGoogleApiClient;
     private MainActivity mainActivity;
-
+    private JSONObject mQueue;
+    private NodeApi.GetConnectedNodesResult nodes;
 
     public WearMessageHandler(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -37,7 +41,11 @@ public class WearMessageHandler extends WearableListenerService{
             Log.i("DEV", "Got queue sent confirmation!");
         }
         else if (messageEvent.getPath().equalsIgnoreCase(SEND_UPDATE_REQUEST)){
-            sendQueueToWear();
+            try {
+                sendQueueToWear(mQueue);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
         else if (messageEvent.getPath().equalsIgnoreCase(SEND_KICK_USER)){
             kickUser(messageEvent.getData());
@@ -58,9 +66,23 @@ public class WearMessageHandler extends WearableListenerService{
     }
 
 
-    private void sendQueueToWear(){
-        //TODO
-        //use SENDING_QUEUE as path
+    public void sendQueueToWear(JSONObject o) throws JSONException {
+        //TODO: TEST!!
+        if (o != null)
+            this.mQueue = o;
+        if (this.mQueue == null) return;
+        Log.i("DEV", "Queue data: " + mQueue.getJSONObject("queue").toString());
+        Log.i("DEV", "SIZE: " + mQueue.getJSONArray("queue").toString().getBytes().length);
+        sendMessage(SENDING_QUEUE, this.mQueue.getJSONArray("queue").toString().getBytes());
+    }
+
+    public void sendQueueToWear(){
+        //TODO: TEST!!
+        try {
+            sendQueueToWear(mQueue);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -100,12 +122,15 @@ public class WearMessageHandler extends WearableListenerService{
                     initGoogleApi();
 
                 Log.i("DEVm", "Getting nodes!");
-                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mGoogleApiClient ).await();
+
+                if (nodes == null)
+                    nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+
                 Log.i("DEVm", "Got " + nodes.getNodes().size() + " nodes!");
                 for(Node node : nodes.getNodes()) {
+                    Log.i("DEVm", "Sent message! Path: " + path + " Data: " + new String(data));
                     Wearable.MessageApi.sendMessage(
                             mGoogleApiClient, node.getId(), path, data ).await();
-                    Log.i("DEVm", "Sent message!");
                 }
             }
         }).start();

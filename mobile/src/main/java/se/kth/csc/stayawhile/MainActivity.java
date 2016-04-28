@@ -27,7 +27,7 @@ import se.kth.csc.stayawhile.api.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class MainActivity extends AppCompatActivity {
-    private static WearMessageHandler wearMessageHandler;
+    public static WearMessageHandler wearMessageHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

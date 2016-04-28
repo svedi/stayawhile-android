@@ -44,7 +44,7 @@ public class WearMessageListener extends WearableListenerService {
         if( messageEvent.getPath().equalsIgnoreCase( SENDING_QUEUE ) ) {
 
             //TODO: Generate objects from received queue.
-            Log.i("DEV", "Got queue sent to us! Sending reply!");
+            Log.i("DEV", "Got queue sent to us! Sending reply! Queue data: " + new String(messageEvent.getData()));
             sendMessage("/saw_repl", new byte[0]);
 
 
@@ -72,7 +72,7 @@ public class WearMessageListener extends WearableListenerService {
                 for (Node node : nodes.getNodes()) {
                     Wearable.MessageApi.sendMessage(
                             mGoogleApiClient, node.getId(), path, data).await();
-                    Log.i("DEV", "Sent message! To: " + node.getId() + ", Path: " + path + ", Data: " + data);
+                    Log.i("DEV", "Sent message! To: " + node.getId() + ", Path: " + path + ", Data: " + new String(data));
                 }
             }
         }).start();

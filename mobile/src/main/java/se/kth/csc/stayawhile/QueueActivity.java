@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -149,6 +150,11 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             @Override
             public void call(Object... args) {
                 setHelp(args);
+                try {
+                    MainActivity.wearMessageHandler.sendQueueToWear(mQueue);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         });
         mSocket.on("stopHelp", new Emitter.Listener() {
@@ -354,6 +360,13 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             supportInvalidateOptionsMenu();
         } catch (JSONException e) {
             throw new RuntimeException(e);
+        }
+
+
+        try {
+            MainActivity.wearMessageHandler.sendQueueToWear(mQueue);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
