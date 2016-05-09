@@ -2,7 +2,11 @@ package se.kth.csc.stayawhile;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.media.RingtoneManager;
@@ -16,8 +20,13 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,6 +35,7 @@ import org.json.JSONObject;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EventListener;
 import java.util.List;
 
 import io.socket.client.IO;
@@ -46,6 +56,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     private String mQueueName;
     private String mUgid;
     private PowerManager.WakeLock mWakeLock;
+    private JSONObject curContextMenuObj;
 
     {
         try {
@@ -183,7 +194,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         });
         mSocket.connect();
     }
-
 
     @Override
     protected void onDestroy() {
@@ -403,6 +413,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             case R.id.action_broadcast:
             case R.id.action_broadcast_faculty:
                 MessageDialogFragment fragment = new MessageDialogFragment();
+                fragment.setTitle("Send message");
                 Bundle args = new Bundle();
                 args.putInt("target", id == R.id.action_broadcast ? BROADCAST_ALL : BROADCAST_FACULTY);
                 fragment.setArguments(args);
@@ -433,6 +444,12 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             } else if (target == PRIVATE_MESSAGE) {
                 obj.put("ugKthid", arguments.get("ugKthid"));
                 mSocket.emit("messageUser", obj);
+            } else if (target == COMMENT){
+                obj.put("ugKthid", arguments.get("ugKthid"));
+                mSocket.emit("flag", obj);
+            }else if (target == COMPLETION){
+                obj.put("ugKthid", arguments.get("ugKthid"));
+                mSocket.emit("completion", obj);
             } else {
                 throw new RuntimeException("message with invalid target");
             }
@@ -481,5 +498,67 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         });
     }
 
-}
+    public MenuInflater getMenuInflater(JSONObject curObj) {
+        this.curContextMenuObj = curObj;
+        return super.getMenuInflater();
+    }
 
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        int target = -1;
+        String title = "";
+        final int id = item.getItemId();
+        switch (id) {
+            case R.id.actionRemove:
+                sendKick(curContextMenuObj);
+                System.out.println("kick");
+                return true;
+            case R.id.actionHelp:
+                if (gettingHelp(curContextMenuObj)) {
+                    sendStopHelp(curContextMenuObj);
+                } else {
+                    sendHelp(curContextMenuObj);
+                    System.out.println("help");
+                }
+                return true;
+            case R.id.actioBadLocation:
+                cantFind(curContextMenuObj);
+                System.out.println("bad location");
+                return true;
+            case R.id.actionMessage:
+                target = PRIVATE_MESSAGE;
+                title = "Send message";
+                break;
+            case R.id.actionComment:
+                target = COMMENT;
+                title = "Add comment";
+                break;
+            case R.id.actionCompletion:
+                target = COMPLETION;
+                title = "Add Task";
+                break;
+        }
+
+        MessageDialogFragment fragment = new MessageDialogFragment();
+        fragment.setTitle(title);
+        Bundle args = new Bundle();
+
+        args.putInt("target", target);
+        try {
+            args.putString("ugKthid", curContextMenuObj.getString("ugKthid"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        fragment.setArguments(args);
+        fragment.show(getFragmentManager(), "MessageDialogFragment");
+        return true;
+    }
+
+    public boolean gettingHelp(JSONObject student) {
+        try {
+            return student.getBoolean("gettingHelp");
+        } catch (JSONException e) {
+        }
+        return false;
+    }
+}

@@ -1,9 +1,15 @@
 package se.kth.csc.stayawhile;
 
+import android.app.Activity;
 import android.graphics.Typeface;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -97,11 +103,19 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             }
         }
 
-
         @Override
         public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-            menu.add("Remove from queue");
-            menu.add("Send message");
+            menu.setHeaderTitle(((TextView) v.findViewById(R.id.queuee_name)).getText());
+            mActionListener.getMenuInflater(mData).inflate(R.menu.student_context_menu, menu);
+
+            if (mData != null) {
+                MenuItem helpItem = menu.findItem(R.id.actionHelp);
+                if (mActionListener.gettingHelp(mData)) {
+                    helpItem.setTitle("Stop Help");
+                } else {
+                    helpItem.setTitle("Help");
+                }
+            }
         }
     }
 
@@ -214,6 +228,10 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         if (getItemCount() > 0) notifyItemChanged(0);
     }
 
+    public boolean isWaiting(int position) {
+        return mGettingHelpByAssistant.size() <= position && position < mGettingHelpByAssistant.size() + mWaiting.size();
+    }
+
     @Override
     public int getItemCount() {
         return mGettingHelpByAssistant.size() + mWaiting.size() + mGettingHelp.size();
@@ -233,6 +251,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
 
     public interface StudentActionListener {
         void cantFind(JSONObject student);
+        boolean gettingHelp(JSONObject data);
+        MenuInflater getMenuInflater(JSONObject data);
     }
-
 }
