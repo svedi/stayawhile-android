@@ -16,8 +16,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import se.kth.csc.stayawhile.api.APICallback;
-import se.kth.csc.stayawhile.api.APITask;
+import se.kth.csc.stayawhile.api.http.APICallback;
+import se.kth.csc.stayawhile.api.http.APITask;
+import se.kth.csc.stayawhile.api.QueueList;
+import se.kth.csc.stayawhile.api.UserData;
+import se.kth.csc.stayawhile.api.http.GetQueueList;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class QueueListActivity extends AppCompatActivity {
@@ -26,7 +29,7 @@ public class QueueListActivity extends AppCompatActivity {
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
 
-    private JSONObject mUserData;
+    private UserData mUserData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +38,7 @@ public class QueueListActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         try {
-            mUserData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
+            mUserData = UserData.fromJSON(new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}")));
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -54,7 +57,7 @@ public class QueueListActivity extends AppCompatActivity {
                             SharedPreferences.Editor e = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
                             e.putString("userData", result);
                             e.apply();
-                            mUserData = new JSONObject(result);
+                            mUserData = UserData.fromJSON(new JSONObject(result));
                             sendQueueList(new Runnable() {
                                 @Override
                                 public void run() {
@@ -76,12 +79,13 @@ public class QueueListActivity extends AppCompatActivity {
         sendQueueList(null);
     }
 
+    /*
     private void sendQueueList(final Runnable runnable) {
         new APITask(new APICallback() {
             @Override
             public void r(String result) {
                 try {
-                    JSONArray queues = new JSONArray(result);
+                    QueueList queues = QueueList.fromJSON(new JSONArray(result));
                     QueueListActivity.this.onQueueUpdate(queues);
                     if (runnable != null) {
                         runnable.run();
@@ -92,8 +96,21 @@ public class QueueListActivity extends AppCompatActivity {
             }
         }).execute("method", "queueList");
     }
+    */
+    private void sendQueueList(final Runnable runnable) {
+        new GetQueueList() {
+            @Override
+            protected void onPostExecute(QueueList result) {
+                QueueListActivity.this.onQueueUpdate(result);
+                if (runnable != null) {
+                    runnable.run();
+                }
+            }
+        }.execute();
+    }
 
-    private void onQueueUpdate(JSONArray queues) {
+
+    private void onQueueUpdate(QueueList queues) {
         mAdapter = new QueueListAdapter(queues, this, mUserData);
         mRecyclerView.setAdapter(mAdapter);
     }

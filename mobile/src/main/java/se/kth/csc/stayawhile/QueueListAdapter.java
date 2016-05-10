@@ -20,15 +20,18 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import se.kth.csc.stayawhile.api.APICallback;
-import se.kth.csc.stayawhile.api.APITask;
+import se.kth.csc.stayawhile.api.http.APICallback;
+import se.kth.csc.stayawhile.api.http.APITask;
+import se.kth.csc.stayawhile.api.Queue;
+import se.kth.csc.stayawhile.api.QueueList;
+import se.kth.csc.stayawhile.api.UserData;
 
 public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.ViewHolder> {
 
-    private JSONObject mUserData;
+    private UserData mUserData;
     private QueueListActivity activity;
-    private List<JSONObject> mAssistantQueue;
-    private List<JSONObject> mOtherQueues;
+    private List<Queue> mAssistantQueue;
+    private List<Queue> mOtherQueues;
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 
@@ -42,7 +45,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                 @Override
                 public void onClick(View v) {
                     try {
-                        if (isAssistant(mData)) {
+                        if (isAssistant(Queue.fromJSON(mData))) {
                             Intent intent = new Intent(activity, QueueActivity.class);
                             intent.putExtra("queue", mData.getString("name"));
                             QueueListAdapter.this.activity.startActivity(intent);
@@ -74,7 +77,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                 length.setText(String.valueOf(data.getInt("length")));
                 View titlebar = mCardView.findViewById(R.id.queue_titlebar);
                 ImageView icon = (ImageView) mCardView.findViewById(R.id.queue_icon);
-                if (isAssistant(data)) {
+                if (isAssistant(Queue.fromJSON(data))) {
                     titlebar.setBackgroundColor(activity.getResources().getColor(R.color.colorPrimary));
                     title.setTypeface(Typeface.DEFAULT_BOLD);
                 } else {
@@ -94,14 +97,14 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         }
     }
 
-    public QueueListAdapter(JSONArray queues, QueueListActivity context, JSONObject userData) {
+    public QueueListAdapter(QueueList queues, QueueListActivity context, UserData userData) {
         mUserData = userData;
         mAssistantQueue = new ArrayList<>();
         mOtherQueues = new ArrayList<>();
-        for (int i = 0; i < queues.length(); i++) {
+        for (int i = 0; i < queues.getQueues().size(); i++) {
             try {
-                JSONObject queue = queues.getJSONObject(i);
-                if (queue.getBoolean("hiding")) continue;
+                Queue queue = queues.getQueues().get(i);
+                if (queue.getJSON().getBoolean("hiding")) continue;
                 if (isAssistant(queue)) {
                     mAssistantQueue.add(queue);
                 } else {
@@ -111,11 +114,11 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                 throw new RuntimeException(e);
             }
         }
-        final Comparator<JSONObject> nameComparator = new Comparator<JSONObject>() {
+        final Comparator<Queue> nameComparator = new Comparator<Queue>() {
             @Override
-            public int compare(JSONObject lhs, JSONObject rhs) {
+            public int compare(Queue lhs, Queue rhs) {
                 try {
-                    return lhs.getString("name").compareTo(rhs.getString("name"));
+                    return lhs.getJSON().getString("name").compareTo(rhs.getJSON().getString("name"));
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
@@ -126,11 +129,11 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         activity = context;
     }
 
-    public boolean isAssistant(JSONObject queue) {
+    public boolean isAssistant(Queue queue) {
         try {
-            String queueName = queue.getString("name");
-            JSONArray assistants = mUserData.getJSONArray("assistant");
-            JSONArray teachers = mUserData.getJSONArray("teacher");
+            String queueName = queue.getJSON().getString("name");
+            JSONArray assistants = mUserData.getJSON().getJSONArray("assistant");
+            JSONArray teachers = mUserData.getJSON().getJSONArray("teacher");
             for (int i = 0; i < assistants.length(); i++) {
                 if (assistants.getString(i).equals(queueName)) {
                     return true;
@@ -147,7 +150,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         return false;
     }
 
-    public JSONObject onPosition(int position) {
+    public Queue onPosition(int position) {
         if (position < mAssistantQueue.size()) {
             return mAssistantQueue.get(position);
         }
@@ -162,7 +165,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        JSONObject queue = onPosition(position);
+        JSONObject queue = onPosition(position).getJSON();
         holder.setData(queue);
     }
 

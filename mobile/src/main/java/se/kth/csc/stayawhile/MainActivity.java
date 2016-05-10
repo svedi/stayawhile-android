@@ -7,14 +7,10 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.net.CookieHandler;
@@ -22,8 +18,8 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.concurrent.ExecutionException;
 
-import se.kth.csc.stayawhile.api.APICallback;
-import se.kth.csc.stayawhile.api.APITask;
+import se.kth.csc.stayawhile.api.http.APICallback;
+import se.kth.csc.stayawhile.api.http.APITask;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
 
 public class MainActivity extends AppCompatActivity {
