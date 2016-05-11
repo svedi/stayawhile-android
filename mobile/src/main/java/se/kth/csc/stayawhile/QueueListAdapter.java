@@ -76,10 +76,8 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
             }
             if (data.isLocked()) {
                 icon.setImageResource(R.drawable.ic_lock_white_18dp);
-                length.setVisibility(View.GONE);
             } else {
                 icon.setImageResource(R.drawable.ic_people_outline_white_18dp);
-                length.setVisibility(View.VISIBLE);
             }
         }
     }
