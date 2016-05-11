@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import se.kth.csc.stayawhile.api.User;
 
 public class Websocket {
     private Socket socket;
@@ -42,11 +43,11 @@ public class Websocket {
         socket.disconnect();
     }
 
-    public void sendStopHelp(JSONObject user) {
+    public void sendStopHelp(User user) {
         try {
             System.out.println("send stopHelp " + user);
             JSONObject obj = new JSONObject();
-            obj.put("ugKthid", user.get("ugKthid"));
+            obj.put("ugKthid", user.getUgKthid());
             obj.put("queueName", mQueueName);
             socket.emit("stopHelp", obj);
         } catch (JSONException e) {
@@ -54,10 +55,10 @@ public class Websocket {
         }
     }
 
-    public void sendHelp(JSONObject user) {
+    public void sendHelp(User user) {
         try {
             JSONObject obj = new JSONObject();
-            obj.put("ugKthid", user.get("ugKthid"));
+            obj.put("ugKthid", user.getUgKthid());
             obj.put("queueName", mQueueName);
             System.out.println("send help " + obj);
             socket.emit("help", obj);
@@ -66,10 +67,10 @@ public class Websocket {
         }
     }
 
-    public void sendKick(JSONObject user) {
+    public void sendKick(User user) {
         try {
             JSONObject obj = new JSONObject();
-            obj.put("user", user);
+            obj.put("user", user.getJSON());
             obj.put("queueName", mQueueName);
             socket.emit("kick", obj);
         } catch (JSONException e) {
@@ -154,10 +155,10 @@ public class Websocket {
         }
     }
 
-    public void sendBadLocation(JSONObject student) {
+    public void sendBadLocation(User student) {
         try {
             JSONObject obj = new JSONObject();
-            obj.put("user", student);
+            obj.put("user", student.getJSON());
             obj.put("queueName", mQueueName);
             obj.put("type", "unknown");
             socket.emit("badLocation", obj);

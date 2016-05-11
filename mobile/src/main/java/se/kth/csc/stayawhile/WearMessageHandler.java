@@ -12,6 +12,8 @@ import com.google.android.gms.wearable.WearableListenerService;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import se.kth.csc.stayawhile.api.Queue;
+
 /**
  * Created by Willy on 2016-04-28.
  */
@@ -24,7 +26,7 @@ public class WearMessageHandler extends WearableListenerService{
 
     private GoogleApiClient mGoogleApiClient;
     private MainActivity mainActivity;
-    private JSONObject mQueue;
+    private Queue mQueue;
     private NodeApi.GetConnectedNodesResult nodes;
 
     public WearMessageHandler(MainActivity mainActivity) {
@@ -66,14 +68,15 @@ public class WearMessageHandler extends WearableListenerService{
     }
 
 
-    public void sendQueueToWear(JSONObject o) throws JSONException {
+    public void sendQueueToWear(Queue o) throws JSONException {
         //TODO: TEST!!
         if (o != null)
             this.mQueue = o;
         if (this.mQueue == null) return;
-        Log.i("DEV", "Queue data: " + mQueue.getJSONObject("queue").toString());
-        Log.i("DEV", "SIZE: " + mQueue.getJSONArray("queue").toString().getBytes().length);
-        sendMessage(SENDING_QUEUE, this.mQueue.getJSONArray("queue").toString().getBytes());
+        // TODO: This line doesn't seem to work. queue field isn't a JSONObject?
+        //Log.i("DEV", "Queue data: " + mQueue.getJSON().getJSONObject("queue").toString());
+        Log.i("DEV", "SIZE: " + mQueue.getJSON().getJSONArray("queue").toString().getBytes().length);
+        sendMessage(SENDING_QUEUE, this.mQueue.getJSON().getJSONArray("queue").toString().getBytes());
     }
 
     public void sendQueueToWear(){

@@ -22,26 +22,30 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import se.kth.csc.stayawhile.api.Queue;
+import se.kth.csc.stayawhile.api.Queuee;
+import se.kth.csc.stayawhile.api.User;
+
 public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> {
 
     private StudentActionListener mActionListener;
-    private List<JSONObject> mWaiting;
-    private List<JSONObject> mGettingHelp;
-    private List<JSONObject> mGettingHelpByAssistant;
+    private List<Queuee> mWaiting;
+    private List<Queuee> mGettingHelp;
+    private List<Queuee> mGettingHelpByAssistant;
     private String mUgid;
 
-    public List<JSONObject> getWaiting() {
+    public List<Queuee> getWaiting() {
         return mWaiting;
     }
 
-    public List<JSONObject> getHelpedByMe() {
+    public List<Queuee> getHelpedByMe() {
         return mGettingHelpByAssistant;
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnCreateContextMenuListener {
 
         public View mCardView;
-        public JSONObject mData;
+        public Queuee mData;
 
         public ViewHolder(View v) {
             super(v);
@@ -56,50 +60,46 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
             });
         }
 
-        public void setData(JSONObject data, int position) {
+        public void setData(Queuee data, int position) {
             this.mData = data;
-            try {
-                TextView title = (TextView) mCardView.findViewById(R.id.queuee_name);
-                title.setText(data.getString("realname"));
-                TextView location = (TextView) mCardView.findViewById(R.id.queuee_location);
-                if (data.getBoolean("badLocation")) {
-                    location.setText("???");
-                } else {
-                    location.setText(data.getString("location"));
-                }
-                TextView comment = (TextView) mCardView.findViewById(R.id.queuee_comment);
-                comment.setText(data.getString("comment"));
-                TextView description = (TextView) mCardView.findViewById(R.id.queuee_description);
-                View titleBar = mCardView.findViewById(R.id.queuee_background);
-                View actions = mCardView.findViewById(R.id.queuee_actions);
+            TextView title = (TextView) mCardView.findViewById(R.id.queuee_name);
+            title.setText(data.getRealname());
+            TextView location = (TextView) mCardView.findViewById(R.id.queuee_location);
+            if (data.getBadLocation()) {
+                location.setText("???");
+            } else {
+                location.setText(data.getLocation());
+            }
+            TextView comment = (TextView) mCardView.findViewById(R.id.queuee_comment);
+            comment.setText(data.getComment());
+            TextView description = (TextView) mCardView.findViewById(R.id.queuee_description);
+            View titleBar = mCardView.findViewById(R.id.queuee_background);
+            View actions = mCardView.findViewById(R.id.queuee_actions);
 
-                if (data.getBoolean("help")) {
-                    description.setText("Help");
-                } else {
-                    description.setText("Present");
-                }
-                if (QueueAdapter.this.helpedByMe(data)) {
-                    actions.setVisibility(View.VISIBLE);
-                } else {
-                    actions.setVisibility(View.GONE);
-                }
-                if (QueueAdapter.this.helpedByMe(data) || (!data.getBoolean("gettingHelp") && position == 0)) {
-                    title.setText("\u25B6 " + title.getText());
-                    title.setTypeface(Typeface.DEFAULT_BOLD);
-                    location.setTypeface(Typeface.DEFAULT_BOLD);
-                } else {
-                    title.setTypeface(Typeface.DEFAULT);
-                    location.setTypeface(Typeface.DEFAULT);
-                }
-                if (data.getBoolean("gettingHelp")) {
-                    titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorPrimary));
-                } else if (data.getBoolean("badLocation")) {
-                    titleBar.setBackgroundColor(mCardView.getResources().getColor(android.R.color.holo_red_dark));
-                } else {
-                    titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
-                }
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
+            if (data.getHelp()) {
+                description.setText("Help");
+            } else {
+                description.setText("Present");
+            }
+            if (QueueAdapter.this.helpedByMe(data)) {
+                actions.setVisibility(View.VISIBLE);
+            } else {
+                actions.setVisibility(View.GONE);
+            }
+            if (QueueAdapter.this.helpedByMe(data) || (!data.getGettingHelp() && position == 0)) {
+                title.setText("\u25B6 " + title.getText());
+                title.setTypeface(Typeface.DEFAULT_BOLD);
+                location.setTypeface(Typeface.DEFAULT_BOLD);
+            } else {
+                title.setTypeface(Typeface.DEFAULT);
+                location.setTypeface(Typeface.DEFAULT);
+            }
+            if (data.getGettingHelp()) {
+                titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorPrimary));
+            } else if (data.getBadLocation()) {
+                titleBar.setBackgroundColor(mCardView.getResources().getColor(android.R.color.holo_red_dark));
+            } else {
+                titleBar.setBackgroundColor(mCardView.getResources().getColor(R.color.colorAccent));
             }
         }
 
@@ -110,7 +110,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
 
             if (mData != null) {
                 MenuItem helpItem = menu.findItem(R.id.actionHelp);
-                if (mActionListener.gettingHelp(mData)) {
+                if (mData.getGettingHelp()) { // TODO: Might have broken this...
                     helpItem.setTitle("Stop Help");
                 } else {
                     helpItem.setTitle("Help");
@@ -119,57 +119,46 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         }
     }
 
-    public QueueAdapter(JSONArray myDataset, QueueActivity activity, String ugid) {
+    public QueueAdapter(List<Queuee> queuees, QueueActivity activity, String ugid) {
         mActionListener = activity;
         mWaiting = new ArrayList<>();
         mGettingHelp = new ArrayList<>();
         mGettingHelpByAssistant = new ArrayList<>();
         mUgid = ugid;
-        for (int i = 0; i < myDataset.length(); i++) {
-            try {
-                JSONObject obj = myDataset.getJSONObject(i);
-                System.out.println("queue add person " + obj);
-                if (obj.getBoolean("gettingHelp")) {
-                    System.out.println("person is getting help");
-                    if (obj.has("helper")) {
-                        System.out.println("with helper " + obj.getString("helper"));
-                    }
-                    if (obj.has("helper") && obj.getString("helper").equals(mUgid)) {
-                        mGettingHelpByAssistant.add(obj);
-                    } else {
-                        mGettingHelp.add(obj);
-                    }
-                } else {
-                    mWaiting.add(obj);
+        for (int i = 0; i < queuees.size(); i++) {
+            Queuee obj = queuees.get(i);
+            System.out.println("queue add person " + obj.getJSON());
+            if (obj.getGettingHelp()) {
+                System.out.println("person is getting help");
+                if (obj.getJSON().has("helper")) {
+                    System.out.println("with helper " + obj.getHelper());
                 }
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
+                if (obj.getJSON().has("helper") && obj.getHelper().equals(mUgid)) {
+                    mGettingHelpByAssistant.add(obj);
+                } else {
+                    mGettingHelp.add(obj);
+                }
+            } else {
+                mWaiting.add(obj);
             }
         }
     }
 
-    public boolean helpedByMe(JSONObject user) {
-        try {
-            return user.getBoolean("gettingHelp") && user.has("helper") && user.getString("helper").equals(mUgid);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean helpedByMe(Queuee user) {
+        return user.getGettingHelp() && user.getJSON().has("helper") && user.getHelper().equals(mUgid);
     }
 
     public int positionOf(String ugKthid) {
-        try {
-            for (int i = 0; i < getItemCount(); i++) {
-                if (onPosition(i).getString("ugKthid").equals(ugKthid)) {
-                    return i;
-                }
+        for (int i = 0; i < getItemCount(); i++) {
+            if (onPosition(i).getUgKthid().equals(ugKthid)) {
+                return i;
             }
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
         }
+
         return -1;
     }
 
-    public JSONObject onPosition(int pos) {
+    public Queuee onPosition(int pos) {
         if (pos < mGettingHelpByAssistant.size()) return mGettingHelpByAssistant.get(pos);
         pos -= mGettingHelpByAssistant.size();
         if (pos < mWaiting.size()) return mWaiting.get(pos);
@@ -177,7 +166,7 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         return mGettingHelp.get(pos);
     }
 
-    public void set(int pos, JSONObject user) {
+    public void set(int pos, Queuee user) {
         if (pos < mGettingHelpByAssistant.size()) mGettingHelpByAssistant.set(pos, user);
         else if (pos < mGettingHelpByAssistant.size() + mWaiting.size())
             mWaiting.set(pos - mGettingHelpByAssistant.size(), user);
@@ -185,38 +174,30 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
         notifyItemChanged(pos);
     }
 
-    public void add(JSONObject person) {
-        try {
-            if (person.getBoolean("gettingHelp")) {
-                if (person.has("helper") && person.getString("helper").equals(mUgid)) {
-                    notifyItemInserted(insertInto(mGettingHelpByAssistant, person));
-                } else {
-                    notifyItemInserted(mGettingHelpByAssistant.size() + mWaiting.size() + insertInto(mGettingHelp, person));
-                }
+    public void add(Queuee person) {
+        if (person.getGettingHelp()) {
+            if (person.getJSON().has("helper") && person.getHelper().equals(mUgid)) {
+                notifyItemInserted(insertInto(mGettingHelpByAssistant, person));
             } else {
-                int pos = mGettingHelpByAssistant.size() + insertInto(mWaiting, person);
-                notifyItemInserted(pos);
+                notifyItemInserted(mGettingHelpByAssistant.size() + mWaiting.size() + insertInto(mGettingHelp, person));
             }
-            if (getItemCount() > 1) notifyItemChanged(1);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
+        } else {
+            int pos = mGettingHelpByAssistant.size() + insertInto(mWaiting, person);
+            notifyItemInserted(pos);
         }
+        if (getItemCount() > 1) notifyItemChanged(1);
     }
 
-    private int insertInto(List<JSONObject> queue, JSONObject person) {
-        try {
-            int at = 0;
-            if (person.getBoolean("badLocation")) {
-                at = queue.size();
-            } else {
-                while (at < queue.size() && queue.get(at).getLong("time") < person.getLong("time"))
-                    at++;
-            }
-            queue.add(at, person);
-            return at;
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
+    private int insertInto(List<Queuee> queue, Queuee person) {
+        int at = 0;
+        if (person.getBadLocation()) {
+            at = queue.size();
+        } else {
+            while (at < queue.size() && queue.get(at).getTime() < person.getTime())
+                at++;
         }
+        queue.add(at, person);
+        return at;
     }
 
     public void removePosition(int pos) {
@@ -245,13 +226,16 @@ public class QueueAdapter extends RecyclerView.Adapter<QueueAdapter.ViewHolder> 
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        JSONObject queue = onPosition(position);
-        holder.setData(queue, position);
+        Queuee queuee = onPosition(position);
+        holder.setData(queuee, position);
     }
 
     public interface StudentActionListener {
-        void cantFind(JSONObject student);
-        boolean gettingHelp(JSONObject data);
-        MenuInflater getMenuInflater(JSONObject data);
+        void cantFind(User student);
+
+        //boolean gettingHelp(User data);
+
+        // Not sure if this needs a Queuee or just User or whatever?
+        MenuInflater getMenuInflater(Queuee data);
     }
 }

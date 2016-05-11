@@ -9,6 +9,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import se.kth.csc.stayawhile.api.Queue;
+
 public class QueueAccessRequestDialogFragment extends DialogFragment {
 
     @Override
@@ -19,12 +21,12 @@ public class QueueAccessRequestDialogFragment extends DialogFragment {
                 .setNeutralButton("OK", null);
 
         try {
-            String result = args.getString("queue");
-            JSONObject queue = new JSONObject(result);
+            JSONObject result = new JSONObject(args.getString("queue"));
+            Queue queue = Queue.fromJSON(result);
             StringBuilder sb = new StringBuilder();
             sb.append("You do not have assistant access to this queue. To get access, " +
                     "you need to contact one of the teachers in the course:\n");
-            JSONArray teachers = queue.getJSONArray("teacher");
+            JSONArray teachers = queue.getJSON().getJSONArray("teacher");
             for (int i = 0; i < teachers.length(); i++) {
                 sb.append("- " + teachers.getJSONObject(i).getString("realname") + "\n");
             }

@@ -12,13 +12,14 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
+import se.kth.csc.stayawhile.api.Queue;
 import se.kth.csc.stayawhile.api.http.APICallback;
 import se.kth.csc.stayawhile.api.http.APITask;
-import se.kth.csc.stayawhile.api.QueueList;
 import se.kth.csc.stayawhile.api.UserData;
 import se.kth.csc.stayawhile.api.http.GetQueueList;
 import se.kth.csc.stayawhile.cookies.PersistentCookieStore;
@@ -37,11 +38,8 @@ public class QueueListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_queuelist);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        try {
-            mUserData = UserData.fromJSON(new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}")));
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
+        mUserData = UserData.fromJSON(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
+
         mRecyclerView = (RecyclerView) findViewById(R.id.queue_list);
         mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
@@ -53,19 +51,16 @@ public class QueueListActivity extends AppCompatActivity {
                 new APITask(new APICallback() {
                     @Override
                     public void r(String result) {
-                        try {
-                            SharedPreferences.Editor e = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
-                            e.putString("userData", result);
-                            e.apply();
-                            mUserData = UserData.fromJSON(new JSONObject(result));
-                            sendQueueList(new Runnable() {
-                                @Override
-                                public void run() {
-                                    refresh.setRefreshing(false);
-                                }
-                            });
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);                        }
+                        SharedPreferences.Editor e = getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).edit();
+                        e.putString("userData", result);
+                        e.apply();
+                        mUserData = UserData.fromJSON(result);
+                        sendQueueList(new Runnable() {
+                            @Override
+                            public void run() {
+                                refresh.setRefreshing(false);
+                            }
+                        });
                     }
                 }).execute("method", "userData");
             }
@@ -79,28 +74,10 @@ public class QueueListActivity extends AppCompatActivity {
         sendQueueList(null);
     }
 
-    /*
-    private void sendQueueList(final Runnable runnable) {
-        new APITask(new APICallback() {
-            @Override
-            public void r(String result) {
-                try {
-                    QueueList queues = QueueList.fromJSON(new JSONArray(result));
-                    QueueListActivity.this.onQueueUpdate(queues);
-                    if (runnable != null) {
-                        runnable.run();
-                    }
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }).execute("method", "queueList");
-    }
-    */
     private void sendQueueList(final Runnable runnable) {
         new GetQueueList() {
             @Override
-            protected void onPostExecute(QueueList result) {
+            protected void onPostExecute(List<Queue> result) {
                 QueueListActivity.this.onQueueUpdate(result);
                 if (runnable != null) {
                     runnable.run();
@@ -110,7 +87,7 @@ public class QueueListActivity extends AppCompatActivity {
     }
 
 
-    private void onQueueUpdate(QueueList queues) {
+    private void onQueueUpdate(List<Queue> queues) {
         mAdapter = new QueueListAdapter(queues, this, mUserData);
         mRecyclerView.setAdapter(mAdapter);
     }

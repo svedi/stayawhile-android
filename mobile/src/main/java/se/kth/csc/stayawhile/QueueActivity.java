@@ -28,9 +28,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.socket.emitter.Emitter;
+import se.kth.csc.stayawhile.api.Queuee;
+import se.kth.csc.stayawhile.api.User;
 import se.kth.csc.stayawhile.api.http.APICallback;
 import se.kth.csc.stayawhile.api.http.APITask;
 import se.kth.csc.stayawhile.api.Queue;
+import se.kth.csc.stayawhile.api.http.GetQueue;
 import se.kth.csc.stayawhile.api.websocket.Websocket;
 import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
@@ -44,22 +47,24 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     private Queue mQueue;
     private String mQueueName;
     private String mUgid;
+    private User mUser;
     private PowerManager.WakeLock mWakeLock;
-    private JSONObject curContextMenuObj;
+    private Queuee curContextMenuObj;
 
-    { mSocket = new Websocket(); }
+    {
+        mSocket = new Websocket();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.mQueueName = getIntent().getStringExtra("queue");
         mSocket.setQueueName(mQueueName);
-        try {
-            JSONObject userData = new JSONObject(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
-            this.mUgid = userData.getString("ugKthid");
-        } catch (JSONException json) {
-            throw new RuntimeException(json);
-        }
+
+        User user = User.fromJSON(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
+        this.mUgid = user.getUgKthid();
+        this.mUser = user;  // TODO: Just added coz why not, consider throwing this out
+
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -78,32 +83,28 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
 
                             @Override
                             public void onDismiss(RecyclerView recyclerView, int[] reverseSortedPositions) {
-                                List<JSONObject> users = new ArrayList<>();
+                                List<Queuee> users = new ArrayList<>();
                                 for (int position : reverseSortedPositions) {
                                     users.add(mAdapter.onPosition(position));
                                     mAdapter.removePosition(position);
                                 }
                                 mAdapter.notifyDataSetChanged();
-                                for (JSONObject user : users) {
+                                for (Queuee user : users) {
                                     mSocket.sendKick(user);
                                 }
                             }
 
                             @Override
                             public void onSetHelp(RecyclerView recyclerView, int[] reverseSortedPositions) {
-                                List<JSONObject> users = new ArrayList<>();
+                                List<Queuee> users = new ArrayList<>();
                                 for (int position : reverseSortedPositions) {
                                     users.add(mAdapter.onPosition(position));
                                 }
-                                for (JSONObject user : users) {
-                                    try {
-                                        if (user.getBoolean("gettingHelp")) {
-                                            mSocket.sendStopHelp(user);
-                                        } else {
-                                            mSocket.sendHelp(user);
-                                        }
-                                    } catch (JSONException e) {
-                                        throw new RuntimeException(e);
+                                for (Queuee user : users) {
+                                    if (user.getGettingHelp()) {
+                                        mSocket.sendStopHelp(user);
+                                    } else {
+                                        mSocket.sendHelp(user);
                                     }
                                 }
                             }
@@ -146,7 +147,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             public void call(Object... args) {
                 setHelp(args);
                 try {
-                    MainActivity.wearMessageHandler.sendQueueToWear(mQueue.getJSON());
+                    MainActivity.wearMessageHandler.sendQueueToWear(mQueue);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -186,7 +187,14 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     }
 
     private void sendQueueUpdate() {
-        new APITask(new APICallback() {
+        new GetQueue(mQueueName) {
+            @Override
+            public void onPostExecute(Queue queue) {
+                mQueue = queue;
+                QueueActivity.this.onQueueUpdate();
+            }
+        }.execute();
+        /*new APITask(new APICallback() {
             @Override
             public void r(String result) {
                 try {
@@ -197,6 +205,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 }
             }
         }).execute("method", "queue/" + Uri.encode(mQueueName));
+        */
     }
 
     private void setStopHelp(Object... args) {
@@ -204,10 +213,10 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             JSONObject user = (JSONObject) args[0];
             int pos = mAdapter.positionOf(user.getString("ugKthid"));
             if (pos >= 0) {
-                JSONObject existing = mAdapter.onPosition(pos);
+                Queuee existing = mAdapter.onPosition(pos);
                 mAdapter.removePosition(pos);
-                existing.put("gettingHelp", false);
-                existing.remove("helper");
+                existing.getJSON().put("gettingHelp", false);
+                existing.getJSON().remove("helper");
                 mAdapter.add(existing);
             }
         } catch (JSONException e) {
@@ -220,11 +229,11 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
             JSONObject user = (JSONObject) args[0];
             int pos = mAdapter.positionOf(user.getString("ugKthid"));
             if (pos >= 0) {
-                JSONObject existing = mAdapter.onPosition(pos);
+                Queuee existing = mAdapter.onPosition(pos);
                 mAdapter.removePosition(pos);
-                existing.put("gettingHelp", true);
-                if (user.has("helper")) {
-                    existing.put("helper", user.get("helper"));
+                existing.getJSON().put("gettingHelp", true);
+                if (user.has("helper")) { // TODO: Why is .has check needed?
+                    existing.getJSON().put("helper", user.get("helper"));
                 }
                 mAdapter.add(existing);
             }
@@ -234,38 +243,29 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     }
 
     private void updateUser(Object... args) {
-        try {
-            JSONObject user = (JSONObject) args[0];
-            int pos = mAdapter.positionOf(user.getString("ugKthid"));
-            if (pos >= 0) {
-                mAdapter.set(pos, user);
-            }
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
+        Queuee user = Queuee.fromJSON((JSONObject) args[0]);
+        int pos = mAdapter.positionOf(user.getUgKthid());
+        if (pos >= 0) {
+            mAdapter.set(pos, user);
         }
 
-        try {
-            JSONObject user = (JSONObject) args[0];
-            JSONArray queuees = mQueue.getJSON().getJSONArray("queue");
-            for (int i = 0; i < queuees.length(); i++) {
-                if (queuees.getJSONObject(i).getString("ugKthid").equals(user.getString("ugKthid"))) {
-                    queuees.put(i, user);
-                    break;
-                }
+        List<Queuee> queuees = mQueue.getQueuees();
+        for (int i = 0; i < queuees.size(); i++) {
+            if (queuees.get(i).getUgKthid().equals(user.getUgKthid())) {
+                queuees.set(i, user);
+                break;
             }
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    onQueueUpdate();
-                }
-            });
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
         }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                onQueueUpdate();
+            }
+        });
     }
 
     private void newUser(Object... args) {
-        JSONObject person = (JSONObject) args[0];
+        Queuee person = Queuee.fromJSON((JSONObject) args[0]);
         mAdapter.add(person);
     }
 
@@ -281,26 +281,14 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         }
     }
 
-    private boolean isLocked() {
-        try {
-            return mQueue.getJSON().getBoolean("locked");
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void onQueueUpdate() {
-        try {
-            mAdapter = new QueueAdapter(mQueue.getJSON().getJSONArray("queue"), this, mUgid);
-            mRecyclerView.setAdapter(mAdapter);
-            supportInvalidateOptionsMenu();
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
+        mAdapter = new QueueAdapter(mQueue.getQueuees(), this, mUgid);
+        mRecyclerView.setAdapter(mAdapter);
+        supportInvalidateOptionsMenu();
 
 
         try {
-            MainActivity.wearMessageHandler.sendQueueToWear(mQueue.getJSON());
+            MainActivity.wearMessageHandler.sendQueueToWear(mQueue);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -321,7 +309,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     public boolean onPrepareOptionsMenu(Menu menu) {
         if (mQueue != null) {
             MenuItem lockItem = menu.findItem(R.id.action_lock);
-            if (isLocked()) {
+            if (mQueue.isLocked()) {
                 lockItem.setIcon(R.drawable.ic_lock_open_white_24dp);
                 lockItem.setTitle("Unlock");
             } else {
@@ -346,7 +334,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 fragment.show(getFragmentManager(), "MessageDialogFragment");
                 return true;
             case R.id.action_lock:
-                if (isLocked()) {
+                if (mQueue.isLocked()) { // TODO: No null check here
                     mSocket.sendUnlock();
                     sendQueueUpdate(); // TODO: Not sure if this really works reliably
                 } else {
@@ -377,7 +365,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     }
 
     @Override
-    public void cantFind(JSONObject student) {
+    public void cantFind(User student) {
         mSocket.sendBadLocation(student);
         mSocket.sendStopHelp(student);
     }
@@ -408,7 +396,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         });
     }
 
-    public MenuInflater getMenuInflater(JSONObject curObj) {
+    public MenuInflater getMenuInflater(Queuee curObj) {
         this.curContextMenuObj = curObj;
         return super.getMenuInflater();
     }
@@ -424,7 +412,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 System.out.println("kick");
                 return true;
             case R.id.actionHelp:
-                if (gettingHelp(curContextMenuObj)) {
+                if (curContextMenuObj.getGettingHelp()) {
                     mSocket.sendStopHelp(curContextMenuObj);
                 } else {
                     mSocket.sendHelp(curContextMenuObj);
@@ -454,21 +442,9 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         Bundle args = new Bundle();
 
         args.putInt("target", target);
-        try {
-            args.putString("ugKthid", curContextMenuObj.getString("ugKthid"));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        args.putString("ugKthid", curContextMenuObj.getUgKthid());
         fragment.setArguments(args);
         fragment.show(getFragmentManager(), "MessageDialogFragment");
         return true;
-    }
-
-    public boolean gettingHelp(JSONObject student) {
-        try {
-            return student.getBoolean("gettingHelp");
-        } catch (JSONException e) {
-        }
-        return false;
     }
 }
