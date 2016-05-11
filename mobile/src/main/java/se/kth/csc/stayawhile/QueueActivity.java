@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -34,7 +35,7 @@ import se.kth.csc.stayawhile.api.http.GetQueue;
 import se.kth.csc.stayawhile.api.websocket.Websocket;
 import se.kth.csc.stayawhile.swipe.QueueTouchListener;
 
-public class QueueActivity extends AppCompatActivity implements MessageDialogFragment.MessageListener, QueueAdapter.StudentActionListener {
+public class QueueActivity extends AppCompatActivity implements MessageDialogFragment.MessageListener, QueueAdapter.StudentActionListener, KickStudentDialogFragment.KickStudentDialogListener {
 
     private RecyclerView mRecyclerView;
     private QueueAdapter mAdapter;
@@ -67,50 +68,45 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         this.mRecyclerView.setHasFixedSize(true);
         mLayoutManager = new LinearLayoutManager(this);
         this.mRecyclerView.setLayoutManager(mLayoutManager);
-        mRecyclerView.addOnItemTouchListener(
-                new QueueTouchListener(
-                        mRecyclerView,
-                        new QueueTouchListener.QueueSwipeListener() {
+        mRecyclerView.addOnItemTouchListener(new QueueTouchListener(mRecyclerView,
+                new QueueTouchListener.QueueSwipeListener() {
+                    @Override
+                    public void onDismiss(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                        // TODO: This is kinda broken since we dont fetch all the user info in advance.
+                        //       The info that one is about to remove is displayed in the popup, though.
+                        for (int position : reverseSortedPositions) {
+                            showKickUserDialog(position);
+                        }
+                    }
 
-                            @Override
-                            public void onDismiss(RecyclerView recyclerView, int[] reverseSortedPositions) {
-                                List<Queuee> users = new ArrayList<>();
-                                for (int position : reverseSortedPositions) {
-                                    users.add(mAdapter.onPosition(position));
-                                    mAdapter.removePosition(position);
-                                }
-                                mAdapter.notifyDataSetChanged();
-                                for (Queuee user : users) {
-                                    mSocket.sendKick(user);
-                                }
-                            }
-
-                            @Override
-                            public void onSetHelp(RecyclerView recyclerView, int[] reverseSortedPositions) {
-                                List<Queuee> users = new ArrayList<>();
-                                for (int position : reverseSortedPositions) {
-                                    users.add(mAdapter.onPosition(position));
-                                }
-                                for (Queuee user : users) {
-                                    if (user.getGettingHelp()) {
-                                        mSocket.sendStopHelp(user);
-                                    } else {
-                                        mSocket.sendHelp(user);
-                                    }
-                                }
+                    @Override
+                    public void onSetHelp(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                        List<Queuee> users = new ArrayList<>();
+                        for (int position : reverseSortedPositions) {
+                            users.add(mAdapter.onPosition(position));
+                        }
+                        for (Queuee user : users) {
+                            if (user.getGettingHelp()) {
+                                mSocket.sendStopHelp(user);
+                            } else {
+                                mSocket.sendHelp(user);
                             }
                         }
-                )
-        );
+                    }
+                }));
 
         registerForContextMenu(mRecyclerView);
 
         sendQueueUpdate();
+
         PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "QueueActivity");
         mWakeLock.acquire();
+
         setSocketListeners();
+
         setupNotifications();
+
     }
 
     private void setSocketListeners() {
@@ -278,6 +274,26 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         return true;
     }
 
+    private void showKickUserDialog(int position) {
+        Queuee user = mAdapter.onPosition(position);
+        Bundle args = new Bundle();
+        args.putInt("position", position);
+        args.putString("user", user.getJSON().toString());
+        KickStudentDialogFragment q = new KickStudentDialogFragment();
+        q.setArguments(args);
+        q.show(QueueActivity.this.getFragmentManager(), "KickStudentDialogFragment");
+    }
+
+    public void onKickStudentDialogPositiveClick(KickStudentDialogFragment dialog, String ugKthid, int position) {
+        Queuee user = mAdapter.onPosition(position);
+        if (!ugKthid.equals(user.getUgKthid())) {
+            return;
+        }
+        mAdapter.removePosition(position);
+        mSocket.sendKick(user);
+        //mAdapter.notifyDataSetChanged();  // Seems this is called anyway in removePosition ?
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.queue_menu, menu);
@@ -387,7 +403,7 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
         final int id = item.getItemId();
         switch (id) {
             case R.id.actionRemove:
-                mSocket.sendKick(curContextMenuObj);
+                showKickUserDialog(mAdapter.positionOf(curContextMenuObj.getUgKthid()));
                 System.out.println("kick");
                 return true;
             case R.id.actionHelp:
