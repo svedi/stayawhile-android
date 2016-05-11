@@ -11,11 +11,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,7 +44,6 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                         intent.putExtra("queue", mData.getName());
                         QueueListAdapter.this.activity.startActivity(intent);
                     } else {
-                        // TODO: Turns out it's not such a good idea to make this stuff return objects...
                         new APITask(new APICallback() {
                             @Override
                             public void r(String result) {
@@ -95,26 +89,18 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         mAssistantQueue = new ArrayList<>();
         mOtherQueues = new ArrayList<>();
         for (int i = 0; i < queues.size(); i++) {
-            try {
-                Queue queue = queues.get(i);
-                if (queue.getJSON().getBoolean("hiding")) continue;
-                if (mUserData.isAssistant(queue)) {
-                    mAssistantQueue.add(queue);
-                } else {
-                    mOtherQueues.add(queue);
-                }
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
+            Queue queue = queues.get(i);
+            if (queue.getHiding()) continue;
+            if (mUserData.isAssistant(queue)) {
+                mAssistantQueue.add(queue);
+            } else {
+                mOtherQueues.add(queue);
             }
         }
         final Comparator<Queue> nameComparator = new Comparator<Queue>() {
             @Override
             public int compare(Queue lhs, Queue rhs) {
-                try {
-                    return lhs.getJSON().getString("name").compareTo(rhs.getJSON().getString("name"));
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
+                return lhs.getName().compareTo(rhs.getName());
             }
         };
         Collections.sort(mAssistantQueue, nameComparator);

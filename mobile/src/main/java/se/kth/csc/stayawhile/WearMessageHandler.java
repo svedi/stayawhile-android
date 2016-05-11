@@ -10,7 +10,6 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import se.kth.csc.stayawhile.api.Queue;
 

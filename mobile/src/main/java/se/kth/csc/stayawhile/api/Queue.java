@@ -52,6 +52,14 @@ public class Queue {
         }
     }
 
+    public boolean getHiding() {
+        try {
+            return json.getBoolean("hiding");
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public boolean isLocked() {
         try {
             return json.getBoolean("locked");

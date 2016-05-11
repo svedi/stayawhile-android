@@ -15,14 +15,9 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import se.kth.csc.stayawhile.api.Queue;
 import se.kth.csc.stayawhile.api.Queuee;
 import se.kth.csc.stayawhile.api.User;
 

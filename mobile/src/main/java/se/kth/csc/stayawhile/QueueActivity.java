@@ -19,7 +19,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -30,8 +29,6 @@ import java.util.List;
 import io.socket.emitter.Emitter;
 import se.kth.csc.stayawhile.api.Queuee;
 import se.kth.csc.stayawhile.api.User;
-import se.kth.csc.stayawhile.api.http.APICallback;
-import se.kth.csc.stayawhile.api.http.APITask;
 import se.kth.csc.stayawhile.api.Queue;
 import se.kth.csc.stayawhile.api.http.GetQueue;
 import se.kth.csc.stayawhile.api.websocket.Websocket;
@@ -42,13 +39,12 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     private RecyclerView mRecyclerView;
     private QueueAdapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
+    private PowerManager.WakeLock mWakeLock;
 
     private Websocket mSocket;
     private Queue mQueue;
     private String mQueueName;
     private String mUgid;
-    private User mUser;
-    private PowerManager.WakeLock mWakeLock;
     private Queuee curContextMenuObj;
 
     {
@@ -63,7 +59,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
 
         User user = User.fromJSON(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
         this.mUgid = user.getUgKthid();
-        this.mUser = user;  // TODO: Just added coz why not, consider throwing this out
 
         setContentView(R.layout.activity_queue);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -194,18 +189,6 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
                 QueueActivity.this.onQueueUpdate();
             }
         }.execute();
-        /*new APITask(new APICallback() {
-            @Override
-            public void r(String result) {
-                try {
-                    mQueue = Queue.fromJSON(new JSONObject(result));
-                    QueueActivity.this.onQueueUpdate();
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }).execute("method", "queue/" + Uri.encode(mQueueName));
-        */
     }
 
     private void setStopHelp(Object... args) {

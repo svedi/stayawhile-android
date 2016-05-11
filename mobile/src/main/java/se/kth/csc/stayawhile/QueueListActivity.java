@@ -12,9 +12,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.List;
 
 import se.kth.csc.stayawhile.api.Queue;
