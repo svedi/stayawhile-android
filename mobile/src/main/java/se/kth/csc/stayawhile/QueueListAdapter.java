@@ -82,7 +82,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
         }
     }
 
-    public QueueListAdapter(List<Queue> queues, QueueListActivity context, UserData userData) {
+    public QueueListAdapter(List<Queue> queues, final QueueListActivity context, UserData userData) {
         mUserData = userData;
         mAssistantQueue = new ArrayList<>();
         mOtherQueues = new ArrayList<>();
@@ -95,14 +95,19 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.View
                 mOtherQueues.add(queue);
             }
         }
-        final Comparator<Queue> nameComparator = new Comparator<Queue>() {
+        final Comparator<Queue> queueComparator = new Comparator<Queue>() {
             @Override
             public int compare(Queue lhs, Queue rhs) {
+                if (lhs.isLocked() && !rhs.isLocked()) {
+                    return 1;
+                } else if (!lhs.isLocked() && rhs.isLocked()) {
+                    return -1;
+                }
                 return lhs.getName().compareTo(rhs.getName());
             }
         };
-        Collections.sort(mAssistantQueue, nameComparator);
-        Collections.sort(mOtherQueues, nameComparator);
+        Collections.sort(mAssistantQueue, queueComparator);
+        Collections.sort(mOtherQueues, queueComparator);
         activity = context;
     }
 
