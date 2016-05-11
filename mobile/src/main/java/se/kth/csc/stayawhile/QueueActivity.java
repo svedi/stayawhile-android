@@ -47,15 +47,11 @@ public class QueueActivity extends AppCompatActivity implements MessageDialogFra
     private String mUgid;
     private Queuee curContextMenuObj;
 
-    {
-        mSocket = new Websocket();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.mQueueName = getIntent().getStringExtra("queue");
-        mSocket.setQueueName(mQueueName);
+        mSocket = new Websocket(mQueueName);
 
         User user = User.fromJSON(getApplicationContext().getSharedPreferences("userData", Context.MODE_PRIVATE).getString("userData", "{}"));
         this.mUgid = user.getUgKthid();

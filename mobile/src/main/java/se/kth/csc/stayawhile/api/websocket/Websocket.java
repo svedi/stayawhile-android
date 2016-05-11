@@ -16,7 +16,8 @@ public class Websocket {
     private Socket socket;
     private String mQueueName;
 
-    public Websocket() {
+    public Websocket(String queueName) {
+        this.mQueueName = queueName;
         try {
             socket = IO.socket("http://queue.csc.kth.se/");
         } catch (URISyntaxException e) {
@@ -29,10 +30,6 @@ public class Websocket {
                 socket.emit("listen", mQueueName);
             }
         });
-    }
-
-    public void setQueueName(String queueName) {
-        mQueueName = queueName;
     }
 
     public void connect() {
